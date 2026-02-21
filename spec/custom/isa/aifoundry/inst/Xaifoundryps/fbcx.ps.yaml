@@ -27,3 +27,8 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  tmp = rs1[31:0];
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = tmp;
+  }

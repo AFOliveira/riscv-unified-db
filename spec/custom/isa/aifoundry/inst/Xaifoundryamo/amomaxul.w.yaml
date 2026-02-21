@@ -32,3 +32,4 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": "rd = atomic_local_maxu(rs1, rs2, 32)"

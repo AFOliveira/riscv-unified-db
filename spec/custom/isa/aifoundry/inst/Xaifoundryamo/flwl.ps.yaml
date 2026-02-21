@@ -27,3 +27,12 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  if ( m0.bit0 ) fd.e0 = LOCAL_MEM(rs1 + 0, 32) if
+  ( m0.bit1 ) fd.e1 = LOCAL_MEM(rs1 + 4, 32) if (
+  m0.bit2 ) fd.e2 = LOCAL_MEM(rs1 + 8, 32) if (
+  m0.bit3 ) fd.e3 = LOCAL_MEM(rs1 + 12, 32) if (
+  m0.bit4 ) fd.e4 = LOCAL_MEM(rs1 + 16, 32) if (
+  m0.bit5 ) fd.e5 = LOCAL_MEM(rs1 + 20, 32) if (
+  m0.bit6 ) fd.e6 = LOCAL_MEM(rs1 + 24, 32) if (
+  m0.bit7 ) fd.e7 = LOCAL_MEM(rs1 + 28, 32)

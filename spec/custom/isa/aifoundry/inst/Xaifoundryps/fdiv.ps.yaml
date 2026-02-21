@@ -31,3 +31,8 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = f32_div(fs1.e<i>, fs2.e<i>);
+  }
+  Note: In the ET-SoC-1 this instruction traps to M-mode with cause 30 (“M-code emulation”) and is emulated in firmware.

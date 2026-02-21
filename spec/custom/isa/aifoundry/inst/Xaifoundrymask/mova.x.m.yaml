@@ -26,3 +26,4 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": "rd = (m7 << 56) | (m6 << 48) | (m5 << 40) | (m4 << 32) | (m3 << 24) | (m2 << 16) | (m1 << 8) | m0"

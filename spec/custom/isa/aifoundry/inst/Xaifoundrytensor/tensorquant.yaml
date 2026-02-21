@@ -29,3 +29,101 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  fstart = FREG;
+  cols = (ACOLS + 1) * 4;
+  rows = AROWS + 1;
+  line = START % 48;
+  for (k = 0; k < 10; k++) {
+  trans = TXF<k>;
+  switch (trans) {
+  case LAST:
+  return;
+  case INT32_TO_FP32:
+  for (i = 0; i < rows; i++) {
+  for (j = 0; j < cols; j++) {
+  
+  reg = (fstart + i*2 + j/8) % 32;
+  f[reg].e<j%8> = i32_to_f32(f[reg].e<j%8>);
+  }
+  }
+  break;
+  case FP32_TO_INT32:
+  for (i = 0; i < rows; i++) {
+  for (j = 0; j < cols; j++) {
+  reg = (fstart + i*2 + j/8) % 32;
+  f[reg].e<j%8> = f32_to_i2(f[reg].e<j%8>, rdyn);
+  }
+  }
+  break;
+  case RELU:
+  for (i = 0; i < rows; i++) {
+  for (j = 0; j < cols; j++) {
+  reg = (fstart + i*2 + j/8) % 32;
+  f[reg].e<j%8> = max(f[reg].e<j%8>, 0);
+  }
+  }
+  break;
+  case INT32_ADD_ROW:
+  for (i = 0; i < rows; i++) {
+  for (j = 0; j < cols; j++) {
+  reg = (fstart + i*2 + j/8) % 32;
+  f[reg].e<j%8> = f[reg].e<j%8> + L1Scp[line].e[j];
+  }
+  }
+  line = (line + 1) % 48;
+  break;
+  case INT32_ADD_COL:
+  for (i = 0; i < rows; i++) {
+  for (j = 0; j < cols; j++) {
+  reg = (fstart + i*2 + j/8) % 32;
+  f[reg].e<j%8> = f[reg].e<j%8> + L1Scp[line].e[i];
+  }
+  }
+  line = (line + 1) % 48;
+  break;
+  case FP32_MUL_ROW:
+  for (i = 0; i < rows; i++) {
+  for (j = 0; j < cols; j++) {
+  reg = (fstart + i*2 + j/8) % 32;
+  
+  f[reg].e<j%8> = f32_mul(f[reg].e<j%8>, L1Scp[line].e[j]);
+  }
+  }
+  line = (line + 1) % 48;
+  break;
+  case FP32_MUL_COL:
+  for (i = 0; i < rows; i++) {
+  for (j = 0; j < cols; j++) {
+  reg = (fstart + i*2 + j/8) % 32;
+  f[reg].e<j%8> = f32_mul(f[reg].e<j%8>, L1Scp[line].e[i]);
+  }
+  }
+  line = (line + 1) % 48;
+  break;
+  case SATINT8:
+  for (i = 0; i < rows; i++) {
+  for (j = 0; j < cols; j++) {
+  reg = (fstart + i*2 + j/8) % 32;
+  f[reg].e<j%8> = max(-128, min(127, f[reg].e<j%8>)) & 0xFF;
+  }
+  }
+  break;
+  case SATUINT8:
+  for (i = 0; i < rows; i++) {
+  for (j = 0; j < cols; j++) {
+  reg = (fstart + i*2 + j/8) % 32;
+  f[reg].e<j%8> = max(0, min(255, f[reg].e<j%8>)) & 0xFF;
+  }
+  }
+  break;
+  case PACK128B:
+  for (i = 0; i < rows; i++) {
+  for (j = 0; j < cols; j++) {
+  f[(fstart + i*2) % 32].b<j> =
+  f[(fstart + i*2 + j/8) % 32].b<(4*j)%8>;
+  }
+  }
+  break;
+  }
+  }

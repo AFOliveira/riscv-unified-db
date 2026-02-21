@@ -27,3 +27,12 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  low4 = imm20 & 0xf;
+  low12 = low4 < 8
+  ? ((low4 << 8) | (low4 << 4) | low4)
+  : ((low4 << 8) | (low4 << 4) | (low4 + 1));
+  tmp = (imm20 << 12) | low12;
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = tmp;
+  }

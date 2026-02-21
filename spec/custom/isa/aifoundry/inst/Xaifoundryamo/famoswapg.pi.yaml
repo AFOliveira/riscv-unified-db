@@ -30,3 +30,9 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  for (i = 0; i < 8; i++ ) {
+  address = rs2 + fs1.e<i>
+  value = fd.e<i>
+  if ( m0.bit<i>) fd.e<i> = atomic_global_swap(address, value, 32)
+  }

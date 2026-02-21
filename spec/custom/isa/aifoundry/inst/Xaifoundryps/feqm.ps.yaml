@@ -29,3 +29,7 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) md.bit<i> = f32_eq(fs1.e<i>, fs2.e<i>) ? 1 : 0;
+  }

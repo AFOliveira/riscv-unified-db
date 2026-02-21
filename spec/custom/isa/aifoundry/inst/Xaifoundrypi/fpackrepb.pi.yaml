@@ -28,3 +28,11 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  for (i = 0; i < VLEN/32; i++) {
+  k = i % (VLEN/128);
+  if (m0.bit<i>) fd.e<i> = fs1.h<16*k>
+  | (fs1.h<16*k+4> << 8)
+  | (fs1.h<16*k+8> << 16)
+  | (fs1.h<16*k+12> << 24);
+  }

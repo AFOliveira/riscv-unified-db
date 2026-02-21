@@ -29,3 +29,15 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  usemsk = (MSK == 1);
+  dst = START;
+  
+  VA = sext(ADDR << 6, 64);
+  count = ROWS + 1;
+  stride = zext(STRIDE << 6, 64);
+  for (i = 0; i < count; i++) {
+  if (!usemsk || tensor_mask[i] == 1) {
+  L2Scp[(dst + i) % L2ScpLines][*] = MEM(VA + i*stride, 512);
+  }
+  }

@@ -29,3 +29,4 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": "MEM(rs1 + sext(offset,64), 256) = fs2[*];"

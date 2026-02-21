@@ -30,3 +30,4 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": "md = ms1 & ms2"

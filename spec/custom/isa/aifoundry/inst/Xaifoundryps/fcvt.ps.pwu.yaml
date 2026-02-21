@@ -29,3 +29,7 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  for (i = 0; i < VLEN/32; i++) {
+  fd.e<i> = ui32_to_f32(fs1.e<i>);
+  }

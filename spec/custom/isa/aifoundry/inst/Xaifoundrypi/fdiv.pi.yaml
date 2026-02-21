@@ -32,3 +32,16 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) {
+  if (fs1.e<i> == 0x80000000 && fs2.e<i> == -1) {
+  fd.e<i> = fs1.e<i>;
+  } else if (fs2.e<i> == 0) {
+  fd.e<i> = 0xFFFFFFFF;
+  } else {
+  fd.e<i> = fs1.e<i> / fs2.e<i>;
+  }
+  }
+  }
+  Note: In the ET-SoC-1 this instruction traps to M-mode with cause 30 (“M-code emulation”) and is emulated in firmware.

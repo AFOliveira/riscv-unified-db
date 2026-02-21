@@ -29,3 +29,12 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  if ( m0.bit0 ) GLOBAL_MEM(rs2 + fs1.e0, 16) = fs3.h0
+  if ( m0.bit1 ) GLOBAL_MEM(rs2 + fs1.e1, 16) = fs3.h1
+  if ( m0.bit2 ) GLOBAL_MEM(rs2 + fs1.e2, 16) = fs3.h2
+  if ( m0.bit3 ) GLOBAL_MEM(rs2 + fs1.e3, 16) = fs3.h3
+  if ( m0.bit4 ) GLOBAL_MEM(rs2 + fs1.e4, 16) = fs3.h4
+  if ( m0.bit5 ) GLOBAL_MEM(rs2 + fs1.e5, 16) = fs3.h5
+  if ( m0.bit6 ) GLOBAL_MEM(rs2 + fs1.e6, 16) = fs3.h6
+  if ( m0.bit7 ) GLOBAL_MEM(rs2 + fs1.e7, 16) = fs3.h7

@@ -29,3 +29,9 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  addr = rs2[63:5] << 5;
+  for (i = 0; i < VLEN/32; i++) {
+  m = (rs2[4:1] + rs1[4*n+3:4*n]) % 16;
+  if (m0.bit<i>) MEM(addr + 2*m, 16) = fd.e<i>[15:0];
+  }

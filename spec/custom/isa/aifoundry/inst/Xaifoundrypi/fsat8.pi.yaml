@@ -28,3 +28,15 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) {
+  if (fs1.e<i> > 127) {
+  fd.e<i> = 127;
+  } else if (fs.e<1> < -128) {
+  fd.e<i> = -128;
+  } else {
+  fd.e<i> = fs1.e<i>;
+  }
+  }
+  }

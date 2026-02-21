@@ -29,3 +29,11 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  if (m0 != 0) {
+  tmp = MEM(rs2[63:5] << 5, VLEN);
+  for (i = 0; i < VLEN/32; i++) {
+  m = (rs2[4:0] + rs1[5*n+4:5*n]) % 32;
+  if (m0.bit<i>) fd.e<i> = sext(tmp[8*m+7:8*m], 32);
+  }
+  }

@@ -27,3 +27,4 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": "GLOBAL_MEM(rs1, 8) = rs2[7:0]"

@@ -27,3 +27,7 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  for (i = 0; i < VLEN/32; i++) {
+    if (m0.bit<i>) fd.e<i> = snorm16_to_f32(fs1.e<i>);
+  }

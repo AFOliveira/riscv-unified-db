@@ -33,5 +33,3 @@ access:
   for (i = 0; i < VLEN/32; i++) {
   fd.e<i> = i32_to_f32(fs1.e<i>);
   }
-  
-  FCVT.PS.PWU

@@ -28,3 +28,12 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  step = STEP + 1;
+  src = START;
+  rows = ROWS + 1;
+  VA = sext(ADDR << 6, 64);
+  stride = zext((STRIDE & ~3) << 4, 64);
+  for (i = 0; i < rows; i++) {
+  MEM(VA + i*stride, 512) = L1Scp[(src + i*step) % 48][*];
+  }

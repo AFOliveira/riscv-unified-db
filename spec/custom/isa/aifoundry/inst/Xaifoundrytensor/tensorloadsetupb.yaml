@@ -29,3 +29,12 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  VA = sext(ADDR << 6, 64);
+  count = ROWS + 1;
+  stride = zext(STRIDE << 6, 64);
+  for (i = 0; i < count; i++) {
+  if (!TenB.full()) {
+  TenB.next[*] = MEM(VA + i*stride, 512);
+  }
+  }

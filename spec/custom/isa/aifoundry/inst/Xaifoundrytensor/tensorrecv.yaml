@@ -28,3 +28,27 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  fstart = FREG;
+  op
+  = FUNCT;
+  fnum = COUNT;
+  partner = 2*SOURCE;
+  // notify sender that we can accept data
+  send(partner, REDUCE_START);
+  for (i = 0; i < fnum; i++) {
+  // wait until data is available
+  recv(partner, &temp);
+  k = (fstart + i) % 32;
+  for (j = 0; j < 8; j++) {
+  switch (op) {
+  case FADD: f[k].e<j> = f32_add(temp.e<j>, f[k].e<j>); break;
+  case FMAX: f[k].e<j> = f32_max(temp.e<j>, f[k].e<j>); break;
+  case FMIN: f[k].e<j> = f32_min(temp.e<j>, f[k].e<j>); break;
+  case ADD : f[k].e<j> = temp.e<j> + f[k].e<j>; break;
+  case MAX : f[k].e<j> = max(temp.e<j>, f[k].e<j>); break;
+  case MIN : f[k].e<j> = min(temp.e<j>, f[k].e<j>); break;
+  case MOVE: f[k].e<j> = temp.e<j>; break;
+  }
+  }
+  }

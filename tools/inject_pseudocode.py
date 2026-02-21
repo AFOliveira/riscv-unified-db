@@ -44,12 +44,14 @@ def parse_manual(manual_path: Path) -> dict[str, dict]:
     while i < len(lines):
         line = lines[i].strip()
 
-        # Look for "Format:" lines that define an instruction
-        if not line.startswith("Format:"):
+        # Look for "Format:" or "Encoding:" lines that define an instruction
+        if line.startswith("Format:"):
+            format_line = line[len("Format:"):].strip()
+        elif line.startswith("Encoding:"):
+            format_line = line[len("Encoding:"):].strip()
+        else:
             i += 1
             continue
-
-        format_line = line[len("Format:"):].strip()
 
         # Extract instruction mnemonic (first token)
         tokens = format_line.split()
@@ -59,14 +61,18 @@ def parse_manual(manual_path: Path) -> dict[str, dict]:
 
         raw_name = tokens[0]
 
-        # Skip CSRRW-encoded instructions — handle them specially
-        if raw_name.upper() == "CSRRW":
+        # For CSRRW-encoded instructions, extract the CSR name as a fallback
+        # but we'll refine with the Description later
+        is_csrrw = raw_name.upper() == "CSRRW"
+        csrrw_csr_name = None
+        if is_csrrw:
             # Format: CSRRW xd, <csr_name>, xs
             # Extract the CSR name as the instruction name
             # e.g. "CSRRW xd, tensor_load, xs" -> "tensor_load"
             parts = format_line.split(",")
             if len(parts) >= 2:
-                raw_name = parts[1].strip().split()[0].strip()
+                csrrw_csr_name = parts[1].strip().split()[0].strip()
+                raw_name = csrrw_csr_name
             else:
                 i += 1
                 continue
@@ -136,6 +142,10 @@ def parse_manual(manual_path: Path) -> dict[str, dict]:
                 # We've hit the next instruction
                 break
 
+            # Detect chapter headings (e.g. "11 Esperanto Fast Credit...")
+            if stripped and re.match(r"^\d+\s+[A-Z]", stripped):
+                break
+
             # Accumulate content
             if in_description:
                 description_lines.append(cur.rstrip())
@@ -151,9 +161,16 @@ def parse_manual(manual_path: Path) -> dict[str, dict]:
         operation = _clean_operation(operation_lines)
 
         if operation:
-            norm_name = _normalise_name(raw_name)
+            # For CSRRW instructions that share a Format line (e.g. tensor_load,
+            # tensor_fma), extract the actual instruction name from Description
+            actual_name = raw_name
+            if is_csrrw:
+                desc_text = "\n".join(description_lines).strip()
+                actual_name = _extract_csrrw_name(desc_text, csrrw_csr_name)
+
+            norm_name = _normalise_name(actual_name)
             instructions[norm_name] = {
-                "raw_name": raw_name,
+                "raw_name": actual_name,
                 "format": format_line,
                 "description": "\n".join(description_lines).strip(),
                 "operation": operation,
@@ -161,6 +178,20 @@ def parse_manual(manual_path: Path) -> dict[str, dict]:
             }
 
     return instructions
+
+
+def _extract_csrrw_name(description: str, csr_fallback: str | None) -> str:
+    """Extract the real instruction name from a CSRRW instruction's description.
+
+    Tensor sub-variants share the same Format line but have different names
+    in their Description, e.g. "The TensorLoadInterleave8 instruction loads..."
+    """
+    # Try "The <InstructionName> instruction" pattern
+    m = re.search(r"The\s+(\w+)\s+instruction", description)
+    if m:
+        return m.group(1)
+    # Fallback to CSR name from Format line
+    return csr_fallback or "unknown"
 
 
 def _is_encoding_line(stripped: str, lines: list[str], idx: int) -> bool:
@@ -243,17 +274,10 @@ def find_yaml_files(inst_dir: Path) -> dict[str, Path]:
     return mapping
 
 
-# Manual-to-YAML name overrides for instructions whose names differ
+# Manual-to-YAML name overrides for instructions whose names differ.
+# Keys are normalised names (lowercase, no spaces) from the parser output.
 NAME_OVERRIDES: dict[str, str] = {
-    # Tensor instructions: manual uses CSR name, YAML uses combined name
-    "tensor_load": "tensorload",
-    "tensor_load_l2": "tensorloadl2scp",
-    "tensor_fma": "tensorfma32",
-    "tensor_quant": "tensorquant",
-    "tensor_store": "tensorstore",
-    "tensor_reduce": "tensorreduce",
-    "tensor_wait": "tensorwait",
-    # Cache instructions: manual uses CSR-style names
+    # Cache instructions: manual uses CSR-style names via CSRRW
     "evict_sw": "cache.evictsw",
     "evict_va": "cache.evictva",
     "flush_sw": "cache.flushsw",
@@ -265,6 +289,28 @@ NAME_OVERRIDES: dict[str, str] = {
     "unlock_va": "cache.unlockva",
     # Mask: manual has maskpopcz, YAML has maskpopz
     "maskpopcz": "maskpopz",
+    # Tensor: Description-extracted names → YAML names
+    "tensorload": "tensorload",
+    "tensorloadinterleave8": "tensorloadinterleave8",
+    "tensorloadinterleave16": "tensorloadinterleave16",
+    "tensorloadtranspose8": "tensorloadtranspose8",
+    "tensorloadtranspose16": "tensorloadtranspose16",
+    "tensorloadtranspose32": "tensorloadtranspose32",
+    "tensorloadl2": "tensorloadl2scp",
+    "tensorfma32": "tensorfma32",
+    "tensorfma16a32": "tensorfma16a32",
+    "tensorima8a32": "tensorima8a32",
+    "tensorquant": "tensorquant",
+    "tensorstore": "tensorstore",
+    "tensorstorefromscp": "tensorstorefromscp",
+    "tensorsend": "tensorsend",
+    "tensorrecv": "tensorrecv",
+    "tensorreduce": "tensorreduce",
+    "tensorbroadcast": "tensorbroadcast",
+    "tensorfence": "tensorwait",
+    "tensorloadb": "tensorloadsetupb",
+    # FLBarrier: Description says "FLBarrier"
+    "flbarrier": "flbarrier",
 }
 
 

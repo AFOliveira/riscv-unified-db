@@ -28,3 +28,18 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  usemsk = (MSK == 1);
+  dst = START;
+  VA = sext(ADDR << 5, 64);
+  count = ROWS + 1;
+  stride = zext(STRIDE << 6, 64);
+  if (!usemsk || tensor_mask != 0) {
+  // Load 32 x 2*count bytes
+  for (i = 0; i < 32; i++) {
+  
+  for (c = 0; c < 32; c++) {
+  L1Scp[(dst + r) % 48].h[c] = temp[c].h[r];
+  }
+  }
+  }

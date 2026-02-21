@@ -28,3 +28,13 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  fstart = FREG;
+  fnum = COUNT;
+  partner = 2*TARGET;
+  // wait until the receiver is ready to accept data
+  recv(partner, REDUCE_START);
+  
+  for (i = 0; i < fnum; i++) {
+  send(partner, f[(fstart+i)%32]);
+  }

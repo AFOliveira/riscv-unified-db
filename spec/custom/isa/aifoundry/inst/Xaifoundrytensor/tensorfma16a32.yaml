@@ -30,3 +30,40 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  usemsk = (MSK == 1);
+  bcols = (BCOLS + 1) * 4;
+  arows = AROWS + 1;
+  acols = (ACOLS + 1) * 2;
+  offset = AOFFSET * 2;
+  l1scpb = (TENB == 0);
+  bstart = BSTART;
+  astart = ASTART;
+  for (k = 0; k < acols; k += 2) {
+  tmp = l1scpb ? L1Scp[(bstart+k/2)%48] : TenB[k/2];
+  for (i = 0; i < arows; i++) {
+  if (usemsk && !tensor_mask[i]) {
+  if (MUL && k == 0) {
+  for (j = 0; j < bcols; j++) {
+  f[i*2+j/8].e<j%8> = 0;
+  }
+  }
+  continue;
+  }
+  a1 = L1Scp[(astart+i)%48].h[offset+k+0];
+  a2 = L1Scp[(astart+i)%48].h[offset+k+1];
+  
+  for (j = 0; j < bcols; j++) {
+  b1 = tmp.h[j*2+0];
+  b2 = tmp.h[j*2+1];
+  if (MUL && k == 0) {
+  // c = a1*b1 + a2*b2
+  f[i*2+j/8].e<j%8> = f1632_mulAdd2(a1, b1, a2, b2);
+  } else if (a1 != 0 && a2 != 0 && b1 != 0 && b2 != 0) {
+  // c = c + a1*b1 + a2*b2
+  c = f[i*2+j/8].e<j%8>;
+  f[i*2+j/8].e<j%8> = f1632_mulAdd3(a1, b1, a2, b2, c);
+  }
+  }
+  }
+  }

@@ -28,3 +28,21 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  usemsk = (MSK == 1);
+  dst = START;
+  VA = sext(ADDR << 5, 64);
+  count = ROWS + 1;
+  stride = zext(STRIDE << 6, 64);
+  
+  for (i = 0; i < count; i++) {
+  if (!usemsk || tensor_mask[i] == 1) {
+  // Load and interleave 2x32B
+  for (r = 0; r < 2; r++) {
+  temp = MEM(VA + (i * 2 + r) * stride, 256);
+  for (c = 0; c < 16; c++) {
+  L1Scp[(dst + i) % 48].h[c*2 + r] = temp.h[c];
+  }
+  }
+  }
+  }

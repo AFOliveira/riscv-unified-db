@@ -33,3 +33,7 @@ access:
   u: always
   vs: always
   vu: always
+"operation()": |
+  Newval = atomic_increment(barrier_counter[xs[4:0]]);
+  xd = (newval == (xs[12:5]+1)) ? 0x1 : 0x0;
+  if(xd == 1) barrier_counter[xs[4:0]] = 0;

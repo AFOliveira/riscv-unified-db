@@ -17,9 +17,11 @@ definedBy:
     - Xaifoundrypi
 base: 32
 encoding:
-  match: 0100111----------001-----1111011
+  match: -----10----------001-----0111111
   variables:
-    - name: imm
+    - name: imm9_5
+      location: 31-27
+    - name: imm4_0
       location: 24-20
     - name: rs1
       location: 19-15

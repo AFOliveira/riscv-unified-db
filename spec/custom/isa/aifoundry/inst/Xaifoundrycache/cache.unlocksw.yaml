@@ -5,25 +5,24 @@
 
 $schema: inst_schema.json#
 kind: instruction
-name: cache.invalidate
-long_name: Cache Invalidate
+name: cache.unlocksw
+long_name: Cache Unlock by Set/Way
 description: |
-  Invalidate cache lines without writeback. Encoded as CSRRW to ucache_control (0x8C0) or mcache_control (0x7C0) with CacheOp=Invalidate in the source register.
+  Unlock cache line by set and way index. Encoded as CSRRW to CSR 0x7FF (M-mode).
+  The source register rs1 contains the set and way parameters.
 definedBy:
   anyOf:
     - Xaifoundry
     - Xaifoundrycache
 base: 32
 encoding:
-  match: -----------------001-----1110011
+  match: 011111111111-----001-----1110011
   variables:
-    - name: csr
-      location: 31-20
     - name: rs1
       location: 19-15
     - name: rd
       location: 11-7
-assembly: xd, csr, xs1
+assembly: xd, xs1
 access:
   s: always
   u: always

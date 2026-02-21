@@ -16,7 +16,7 @@ definedBy:
     - Xaifoundrypi
 base: 32
 encoding:
-  match: -------------------------0111111
+  match: -------------------------1011111
   variables:
     - name: imm
       location: 31-12

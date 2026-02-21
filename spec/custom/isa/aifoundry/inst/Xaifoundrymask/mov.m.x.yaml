@@ -17,7 +17,7 @@ definedBy:
     - Xaifoundrymask
 base: 32
 encoding:
-  match: 1101011-------------000001111011
+  match: 0101011-------------00---1111011
   variables:
     - name: imm_hi
       location: 24-20
@@ -25,6 +25,8 @@ encoding:
       location: 19-15
     - name: imm_lo
       location: 14-12
+    - name: md
+      location: 9-7
 assembly: md, xs1, imm
 access:
   s: always

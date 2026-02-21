@@ -11,13 +11,13 @@ description: |
   Memory-mapped register to increment fast credit counter 1.
   Writing to this register adds credits to the specified counter.
 definedBy: Xaifoundryfcc
-physical_address: 0x01C0040208
+physical_address: 0x01C03400C8
 length: 64
 writable: true
 fields:
-  VALUE:
-    location: 63-0
+  MASK:
+    location: 31-0
     description: |
-      Credit increment value (write-only).
+      Bitmask selecting which cores' credit counters to increment.
     type: RW
     reset_value: 0

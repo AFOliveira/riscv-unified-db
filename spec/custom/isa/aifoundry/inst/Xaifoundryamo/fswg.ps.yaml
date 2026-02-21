@@ -15,13 +15,11 @@ definedBy:
     - Xaifoundryamo
 base: 32
 encoding:
-  match: 1000011----------001-----0001011
+  match: 010100100000-----111-----0001011
   variables:
-    - name: rs2
-      location: 24-20
     - name: rs1
       location: 19-15
-    - name: rs3
+    - name: rs2
       location: 11-7
 assembly: fs3, fs2(xs1)
 access:

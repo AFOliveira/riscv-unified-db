@@ -17,7 +17,7 @@ definedBy:
     - Xaifoundrypi
 base: 32
 encoding:
-  match: 0011111----------001-----1111011
+  match: 0100111----------101-----1111011
   variables:
     - name: shamt
       location: 24-20

@@ -8,7 +8,7 @@ kind: instruction
 name: fsw.ps
 long_name: Store word packed single
 description: |
-  Store lane 0 of a PS register as a 32-bit word to memory.
+  Store all eight 32-bit elements (256 bits) from a packed-single register to consecutive memory.
 definedBy:
   anyOf:
     - Xaifoundry

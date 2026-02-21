@@ -10,21 +10,20 @@ long_name: TensorLoadL2Scp
 description: |
   Load data from memory directly into the L2 shire cache scratchpad, bypassing the
   L1 data cache.
+  Encoded as CSRRW to tensor_load_l2 CSR (0x85F).
 definedBy:
   anyOf:
     - Xaifoundry
     - Xaifoundrytensor
 base: 32
 encoding:
-  match: 0001110----------111-----0001011
+  match: 100001011111-----001-----1110011
   variables:
-    - name: rs2
-      location: 24-20
     - name: rs1
       location: 19-15
     - name: rd
       location: 11-7
-assembly: xd, xs1, xs2
+assembly: xd, xs1
 access:
   s: always
   u: always

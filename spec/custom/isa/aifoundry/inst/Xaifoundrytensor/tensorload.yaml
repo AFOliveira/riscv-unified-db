@@ -10,21 +10,20 @@ long_name: TensorLoad
 description: |
   Load data from memory address (rs1 + offset) into the L1 data cache scratchpad for use
   by tensor operations. The data is loaded into consecutive scratchpad lines.
+  Encoded as CSRRW to tensor_load CSR (0x83F).
 definedBy:
   anyOf:
     - Xaifoundry
     - Xaifoundrytensor
 base: 32
 encoding:
-  match: 0000000----------111-----0001011
+  match: 100000111111-----001-----1110011
   variables:
-    - name: rs2
-      location: 24-20
     - name: rs1
       location: 19-15
     - name: rd
       location: 11-7
-assembly: xd, xs1, xs2
+assembly: xd, xs1
 access:
   s: always
   u: always

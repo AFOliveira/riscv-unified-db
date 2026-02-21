@@ -8,7 +8,7 @@ kind: instruction
 name: flw.ps
 long_name: Load word packed single
 description: |
-  Load a 32-bit word from memory and broadcast it to all 8 lanes of the destination PS register.
+  Load eight consecutive 32-bit values (256 bits) from memory into a packed-single register.
 definedBy:
   anyOf:
     - Xaifoundry

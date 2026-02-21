@@ -17,14 +17,12 @@ definedBy:
     - Xaifoundrypi
 base: 32
 encoding:
-  match: 0010011------------------1111011
+  match: 0001111----------010-----1111011
   variables:
     - name: rs2
       location: 24-20
     - name: rs1
       location: 19-15
-    - name: rm
-      location: 14-12
     - name: rd
       location: 11-7
 assembly: fd, fs1, fs2

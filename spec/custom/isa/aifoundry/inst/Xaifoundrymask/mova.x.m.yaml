@@ -16,7 +16,7 @@ definedBy:
     - Xaifoundrymask
 base: 32
 encoding:
-  match: 000100000000-----111-----1111011
+  match: 11010110000000000000-----1111011
   variables:
     - name: rd
       location: 11-7

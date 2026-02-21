@@ -23,6 +23,7 @@ versions:
     - name: Xaifoundryps
       version: ">= 1.0.0"
     - name: Xaifoundrycache
+      version: ">= 1.0.0"
 description: |
   The Tensor extension adds matrix multiply and related tensor operations to the ET-Minion
   core's Vector Processing Unit (VPU).

@@ -16,7 +16,7 @@ definedBy:
     - Xaifoundryamo
 base: 32
 encoding:
-  match: 0001111----------101-----0001011
+  match: 1001111----------100-----0001011
   variables:
     - name: rs2
       location: 24-20

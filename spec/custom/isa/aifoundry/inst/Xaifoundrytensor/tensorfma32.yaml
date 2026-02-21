@@ -10,21 +10,20 @@ long_name: TensorFMA32
 description: |
   Multiply two FP32 matrices (A and B), add FP32 accumulator C0, write FP32 result to
   FP registers. Uses the TxFMA units in each VPU lane.
+  Encoded as CSRRW to tensor_fma CSR (0x801).
 definedBy:
   anyOf:
     - Xaifoundry
     - Xaifoundrytensor
 base: 32
 encoding:
-  match: 0010100----------111-----0001011
+  match: 100000000001-----001-----1110011
   variables:
-    - name: rs2
-      location: 24-20
     - name: rs1
       location: 19-15
     - name: rd
       location: 11-7
-assembly: xd, xs1, xs2
+assembly: xd, xs1
 access:
   s: always
   u: always

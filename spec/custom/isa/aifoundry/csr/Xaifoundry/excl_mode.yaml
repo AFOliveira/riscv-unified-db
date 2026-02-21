@@ -12,9 +12,10 @@ priv_mode: M
 length: 64
 writable: true
 description: |
-  Controls the exclusive execution mode for the ET-Minion core. When enabled,
-  the core operates in an exclusive mode that affects how memory operations and
-  synchronization are handled.
+  Controls the multi-hart exclusion mechanism. When a hart sets the ENABLE bit,
+  all other harts in the same Shire are halted, granting the requesting hart
+  exclusive access to shared resources. This is used for critical sections that
+  require single-hart execution without interference from other cores.
 definedBy:
   name: Xaifoundry
 fields:

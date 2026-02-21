@@ -11,7 +11,7 @@ description: |
   Memory-mapped register for fast local barrier 23. Used for low-latency
   barrier synchronization between ET-Minion cores within a Shire.
 definedBy: Xaifoundryflb
-physical_address: 0x01C00401B8
+physical_address: 0x01C03401B8
 length: 64
 writable: true
 fields:

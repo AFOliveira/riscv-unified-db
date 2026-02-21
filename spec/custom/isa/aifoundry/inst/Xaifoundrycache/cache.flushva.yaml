@@ -5,25 +5,24 @@
 
 $schema: inst_schema.json#
 kind: instruction
-name: cache.flush
-long_name: Cache Flush
+name: cache.flushva
+long_name: Cache Flush by Virtual Address
 description: |
-  Flush dirty cache lines to next level of memory hierarchy. Encoded as CSRRW to ucache_control (0x8C0) or mcache_control (0x7C0) with CacheOp=Flush in the source register.
+  Flush dirty cache line by virtual address. Encoded as CSRRW to CSR 0x8BF (U-mode).
+  The source register rs1 contains the virtual address.
 definedBy:
   anyOf:
     - Xaifoundry
     - Xaifoundrycache
 base: 32
 encoding:
-  match: -----------------001-----1110011
+  match: 100010111111-----001-----1110011
   variables:
-    - name: csr
-      location: 31-20
     - name: rs1
       location: 19-15
     - name: rd
       location: 11-7
-assembly: xd, csr, xs1
+assembly: xd, xs1
 access:
   s: always
   u: always

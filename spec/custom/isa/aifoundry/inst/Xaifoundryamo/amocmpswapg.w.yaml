@@ -17,7 +17,7 @@ definedBy:
     - Xaifoundryamo
 base: 32
 encoding:
-  match: 00010-1----------010-----0101011
+  match: 00010-1----------010-----0111011
   variables:
     - name: aq
       location: 26

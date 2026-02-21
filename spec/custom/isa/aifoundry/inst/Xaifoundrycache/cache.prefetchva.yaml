@@ -8,22 +8,21 @@ kind: instruction
 name: cache.prefetchva
 long_name: Cache Prefetch by Virtual Address
 description: |
-  Prefetch cache line by virtual address. Encoded as CSRRW to ucache_control (0x8C0) or mcache_control (0x7C0) with CacheOp=Prefetch by virtual address in the source register.
+  Prefetch cache line by virtual address. Encoded as CSRRW to CSR 0x81F (U-mode).
+  The source register rs1 contains the virtual address.
 definedBy:
   anyOf:
     - Xaifoundry
     - Xaifoundrycache
 base: 32
 encoding:
-  match: -----------------001-----1110011
+  match: 100000011111-----001-----1110011
   variables:
-    - name: csr
-      location: 31-20
     - name: rs1
       location: 19-15
     - name: rd
       location: 11-7
-assembly: xd, csr, xs1
+assembly: xd, xs1
 access:
   s: always
   u: always

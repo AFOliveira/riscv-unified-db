@@ -15,7 +15,7 @@ definedBy:
     - Xaifoundryps
 base: 32
 encoding:
-  match: 0111010----------011-----1111011
+  match: 1000100----------011-----1111011
   variables:
     - name: rs2
       location: 24-20

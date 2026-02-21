@@ -10,21 +10,20 @@ long_name: TensorStore
 description: |
   Store data from L1 scratchpad back to memory. Used to write back results of tensor
   computations.
+  Encoded as CSRRW to tensor_store CSR (0x87F).
 definedBy:
   anyOf:
     - Xaifoundry
     - Xaifoundrytensor
 base: 32
 encoding:
-  match: 0011000----------111-----0001011
+  match: 100001111111-----001-----1110011
   variables:
-    - name: rs2
-      location: 24-20
     - name: rs1
       location: 19-15
     - name: rd
       location: 11-7
-assembly: xd, xs1, xs2
+assembly: xd, xs1
 access:
   s: always
   u: always

@@ -29,7 +29,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   addr = rs1 + sext(offset, 64);
   for (i = 0; i < VLEN/32; i++) {
   if (m0.bit<i>) fd.e0 = MEM(addr + 4*i, 32);

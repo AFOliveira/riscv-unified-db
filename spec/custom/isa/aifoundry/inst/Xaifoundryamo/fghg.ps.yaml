@@ -29,7 +29,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   if ( m0.bit0 ) fd.e0 = SEXT(GLOBAL_MEM(rs2 + fs1.e0, 16), 32)
   if ( m0.bit1 ) fd.e1 = SEXT(GLOBAL_MEM(rs2 + fs1.e1, 16), 32)
   if ( m0.bit2 ) fd.e2 = SEXT(GLOBAL_MEM(rs2 + fs1.e2, 16), 32)

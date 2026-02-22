@@ -28,4 +28,4 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": "rd = count_zeroes(ms1)"
+custom_pseudocode: "rd = count_zeroes(ms1)"

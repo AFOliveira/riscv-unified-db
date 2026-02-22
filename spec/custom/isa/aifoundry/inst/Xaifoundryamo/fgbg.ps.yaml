@@ -29,7 +29,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   if ( m0.bit0 ) GLOBAL_MEM(rs1 + 0, 32) = fs3.e0 if
   ( m0.bit1 ) GLOBAL_MEM(rs1 + 4, 32) = fs3.e1 if (
   m0.bit2 ) GLOBAL_MEM(rs1 + 8, 32) = fs3.e2 if (

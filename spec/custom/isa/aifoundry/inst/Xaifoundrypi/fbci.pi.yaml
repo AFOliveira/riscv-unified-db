@@ -28,7 +28,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   tmp = sext(imm20, 32);
   for (i = 0; i < VLEN/32; i++) {
   if (m0.bit<i>) fd.e<i> = tmp;

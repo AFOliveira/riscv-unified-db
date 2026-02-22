@@ -29,7 +29,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   fstart = FREG;
   cols = (ACOLS + 1) * 4;
   rows = AROWS + 1;

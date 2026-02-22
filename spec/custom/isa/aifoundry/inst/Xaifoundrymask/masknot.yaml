@@ -28,4 +28,4 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": "md = ! ms1"
+custom_pseudocode: "md = ! ms1"

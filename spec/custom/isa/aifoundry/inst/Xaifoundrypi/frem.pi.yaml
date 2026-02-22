@@ -31,7 +31,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   for (i = 0; i < VLEN/32; i++) {
   if (m0.bit<i>) {
   if (fs1.e<i> == 0x80000000 && fs2.e<i> == -1) {

@@ -28,7 +28,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   PA = translate(xs1[47:6]);
   for (i = 0; i < xs1[3:0] + 1; i++) {
     if (!xs1[63] || tensor_mask[i] == 1) {

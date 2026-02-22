@@ -32,4 +32,4 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": "rd = atomic_local_xor(rs1, rs2, 64)"
+custom_pseudocode: "rd = atomic_local_xor(rs1, rs2, 64)"

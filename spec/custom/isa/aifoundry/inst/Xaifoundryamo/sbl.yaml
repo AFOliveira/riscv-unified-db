@@ -27,4 +27,4 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": "LOCAL_MEM(rs1, 8) = rs2[7:0]"
+custom_pseudocode: "LOCAL_MEM(rs1, 8) = rs2[7:0]"

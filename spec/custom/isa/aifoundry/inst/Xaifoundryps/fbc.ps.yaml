@@ -29,7 +29,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   if (m0 != 0) {
   tmp = MEM(rs1 + sext(offset, 64), 32);
   for (i = 0; i < VLEN/32; i++) {

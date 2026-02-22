@@ -33,4 +33,4 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": "rd = atomic_global_compare_swap(rs1, x31, rs2, 64)"
+custom_pseudocode: "rd = atomic_global_compare_swap(rs1, x31, rs2, 64)"

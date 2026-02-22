@@ -28,4 +28,4 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": "N/A"
+custom_pseudocode: "N/A"

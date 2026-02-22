@@ -30,7 +30,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   for (i = 0; i < 8; i++ ) {
   address = rs2 + fs1.e<i>
   value = fd.e<i>

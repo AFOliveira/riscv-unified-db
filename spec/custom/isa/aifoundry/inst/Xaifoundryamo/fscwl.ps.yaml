@@ -29,7 +29,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   if ( m0.bit0 ) LOCAL_MEM(rs2 + fs1.e0, 32) = fs3.e0
   if ( m0.bit1 ) LOCAL_MEM(rs2 + fs1.e1, 32) = fs3.e1
   if ( m0.bit2 ) LOCAL_MEM(rs2 + fs1.e2, 32) = fs3.e2

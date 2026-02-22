@@ -28,7 +28,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   usemsk = (MSK == 1);
   dst = START;
   VA = sext(ADDR << 4, 64);

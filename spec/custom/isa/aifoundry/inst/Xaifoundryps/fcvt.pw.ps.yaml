@@ -29,7 +29,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   for (i = 0; i < VLEN/32; i++) {
   fd.e<i> = f32_to_i32(fs1.e<i>);
   }

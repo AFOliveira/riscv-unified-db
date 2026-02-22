@@ -28,7 +28,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   fstart = FREG;
   fnum = COUNT;
   partner = 2*TARGET;

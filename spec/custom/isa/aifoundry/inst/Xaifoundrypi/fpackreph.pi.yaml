@@ -28,7 +28,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   for (i = 0; i < VLEN/32; i++) {
   k = i % (VLEN/64);
   if (m0.bit<i>) fd.e<i> = fs1.h<4*k> | (fs1.h<4*k+2> << 16);

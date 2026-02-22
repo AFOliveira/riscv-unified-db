@@ -29,7 +29,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   VA = sext(ADDR << 6, 64);
   count = ROWS + 1;
   stride = zext(STRIDE << 6, 64);

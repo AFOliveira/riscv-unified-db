@@ -28,7 +28,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   step = STEP + 1;
   src = START;
   rows = ROWS + 1;

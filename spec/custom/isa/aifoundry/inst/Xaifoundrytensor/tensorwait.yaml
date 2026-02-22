@@ -29,4 +29,4 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": "stall_until_event(xs1[3:0]); xd = 0;"
+custom_pseudocode: "stall_until_event(xs1[3:0]); xd = 0;"

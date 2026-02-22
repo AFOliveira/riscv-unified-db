@@ -27,7 +27,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   low4 = imm20 & 0xf;
   low12 = low4 < 8
   ? ((low4 << 8) | (low4 << 4) | low4)

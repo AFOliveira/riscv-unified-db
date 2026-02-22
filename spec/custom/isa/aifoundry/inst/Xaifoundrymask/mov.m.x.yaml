@@ -33,6 +33,6 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   n
   md = rs1[7:0] | imm8

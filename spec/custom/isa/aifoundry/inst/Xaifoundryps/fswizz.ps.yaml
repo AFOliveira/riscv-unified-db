@@ -31,7 +31,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   for (i = 0; i < VLEN/128; i++) {
   if (m0.bit<4*i+0>) fd.e<4*i+0> = fs1.e<4*i + imm[1:0]>;
   if (m0.bit<4*i+1>) fd.e<4*i+1> = fs1.e<4*i + imm[3:2]>;

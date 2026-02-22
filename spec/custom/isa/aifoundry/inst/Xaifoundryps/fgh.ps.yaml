@@ -29,7 +29,7 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": |
+custom_pseudocode: |
   for (i = 0; i < VLEN/32; i++) {
   if (gsc_progress >= i && m0.bit<i>)
   fd.e<i> = sext(MEM(rs2 + sext(fs1.e<i>,64), 16), 32);

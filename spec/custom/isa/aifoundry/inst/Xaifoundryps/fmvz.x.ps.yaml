@@ -29,4 +29,4 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": "rd = zext(fs1.e<index>, 64);"
+custom_pseudocode: "rd = zext(fs1.e<index>, 64);"

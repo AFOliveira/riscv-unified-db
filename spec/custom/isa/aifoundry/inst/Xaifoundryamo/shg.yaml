@@ -27,4 +27,4 @@ access:
   u: always
   vs: always
   vu: always
-"operation()": "GLOBAL_MEM(rs1, 16) = rs2[7:0]"
+custom_pseudocode: "GLOBAL_MEM(rs1, 16) = rs2[7:0]"

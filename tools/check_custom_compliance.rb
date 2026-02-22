@@ -16,64 +16,50 @@
 
 require "bundler/setup"
 require "udb/resolver"
+require "yaml"
 
 # ---------------------------------------------------------------------------
 # Standard 32-bit base opcode map (bits [6:2], with bits [1:0] = 11)
+#
+# Loaded from spec/std/isa/inst_opcode/*.yaml artifacts instead of hardcoding.
 #
 # Source: RISC-V Unprivileged ISA Manual
 #   https://github.com/riscv/riscv-isa-manual/blob/main/src/rv-32-64g.adoc
 #   Section: [[opcodemap]] "RISC-V base opcode map, inst[1:0]=11"
 #
 # Layout: inst[6:5] (rows) x inst[4:2] (columns), inst[1:0] = 11
-# The column inst[4:2]=111 is labeled "(>32b)" and all its entries are
-# reserved for variable-length instruction prefixes.
+# Entries not in YAML files (handled by classification logic):
+#   - inst[4:2]=111 column: >32b variable-length instruction prefix space
+#   - opcode 1101011: reserved
 # ---------------------------------------------------------------------------
-STANDARD_OPCODES = {
-  # inst[6:5] = 00
-  "0000011" => "LOAD",
-  "0000111" => "LOAD-FP",
-  "0001011" => "custom-0",
-  "0001111" => "MISC-MEM",
-  "0010011" => "OP-IMM",
-  "0010111" => "AUIPC",
-  "0011011" => "OP-IMM-32",
-  "0011111" => ">32b",            # reserved for >32-bit instruction prefix
-  # inst[6:5] = 01
-  "0100011" => "STORE",
-  "0100111" => "STORE-FP",
-  "0101011" => "custom-1",
-  "0101111" => "AMO",
-  "0110011" => "OP",
-  "0110111" => "LUI",
-  "0111011" => "OP-32",
-  "0111111" => ">32b",            # reserved for >32-bit instruction prefix
-  # inst[6:5] = 10
-  "1000011" => "MADD",
-  "1000111" => "MSUB",
-  "1001011" => "NMSUB",
-  "1001111" => "NMADD",
-  "1010011" => "OP-FP",
-  "1010111" => "OP-V",
-  "1011011" => "custom-2/rv128",
-  "1011111" => ">32b",            # reserved for >32-bit instruction prefix
-  # inst[6:5] = 11
-  "1100011" => "BRANCH",
-  "1100111" => "JALR",
-  "1101011" => "reserved",
-  "1101111" => "JAL",
-  "1110011" => "SYSTEM",
-  "1110111" => "OP-VE",
-  "1111011" => "custom-3/rv128",
-  "1111111" => ">32b"             # reserved for >32-bit instruction prefix
-}.freeze
 
-# Source: same opcode map table — custom-0 through custom-3 "will be avoided by
-# future standard extensions and are recommended for use by custom instruction-set
-# extensions within the base 32-bit instruction format."
-CUSTOM_OPCODE_SPACES = %w[custom-0 custom-1 custom-2/rv128 custom-3/rv128].freeze
+# Load the opcode map from inst_opcode/*.yaml artifacts.
+# Returns a Hash mapping 7-bit binary strings to opcode names.
+def load_opcode_map
+  opcode_dir = Pathname.new(Udb.repo_root) / "spec" / "std" / "isa" / "inst_opcode"
+  map = {}
+  Dir[opcode_dir / "*.yaml"].each do |path|
+    data = YAML.safe_load_file(path)
+    next unless data&.dig("kind") == "instruction_opcode"
 
-# Opcodes in the inst[4:2]=111 column, reserved for >32-bit instruction prefixes.
-VARLEN_PREFIX_OPCODES = [">32b"].freeze
+    name = data["name"]
+    value = data.dig("data", "value")
+    next if value.nil?
+
+    int_val = value.is_a?(String) ? value.sub(/^0b/, "").to_i(2) : value
+    bin_str = int_val.to_s(2).rjust(7, "0")
+    map[bin_str] = name
+  end
+  map
+end
+
+STANDARD_OPCODES = load_opcode_map.freeze
+
+# Pattern to identify custom opcode spaces by name
+CUSTOM_OPCODE_PATTERN = /\Acustom-/
+
+# Reserved opcode (not an actual opcode, just a reserved slot)
+RESERVED_OPCODE = "1101011"
 
 # ---------------------------------------------------------------------------
 # Standard register variable positions per RISC-V ISA (R/I/S/B/U/J/R4-type)
@@ -86,6 +72,9 @@ VARLEN_PREFIX_OPCODES = [">32b"].freeze
 # Standard positions:
 #   rs1: bits 19:15    rs2: bits 24:20    rd: bits 11:7    rs3: bits 31:27
 # Aliases (xs1/fs1/etc.) follow the same positions as their base register.
+#
+# TODO: Data-drive from inst_operand/ YAML artifacts once the operand system
+#       lands in upstream (see origin/inst_format branch).
 # ---------------------------------------------------------------------------
 STANDARD_VAR_POSITIONS = {
   "rs1"  => [19, 18, 17, 16, 15],
@@ -236,28 +225,28 @@ def check_opcode_space(inst, xlen, results)
 
   # Replace don't-cares with 0 for classification (only matters for bits 6:0)
   opcode_fixed = opcode.gsub("-", "0")
-  category = STANDARD_OPCODES[opcode_fixed]
+  name = STANDARD_OPCODES[opcode_fixed]
 
-  if category.nil?
-    # Check if bits vary (have '-' in opcode region) making classification ambiguous
-    if opcode.include?("-")
-      results.add("1. Opcode Space", "info", inst.name,
-        "opcode bits[6:0]=#{opcode} contain variable bits — cannot classify uniquely")
+  if name
+    if CUSTOM_OPCODE_PATTERN.match?(name)
+      # OK — custom opcode space, no issue
     else
-      results.add("1. Opcode Space", "info", inst.name,
-        "uses unassigned opcode space (bits[6:0]=#{opcode})")
+      results.add("1. Opcode Space", "warn", inst.name,
+        "uses standard opcode space #{name} (bits[6:0]=#{opcode})")
     end
-  elsif CUSTOM_OPCODE_SPACES.include?(category)
-    # OK — custom opcode space, no issue
-  elsif VARLEN_PREFIX_OPCODES.include?(category)
+  elsif opcode_fixed[-3..] == "111"
+    # inst[4:2]=111 column — reserved for >32-bit variable-length instruction prefix
     results.add("1. Opcode Space", "warn", inst.name,
       "uses >32b variable-length instruction prefix opcode space (bits[6:0]=#{opcode})")
-  elsif category == "reserved"
+  elsif opcode_fixed == RESERVED_OPCODE
     results.add("1. Opcode Space", "info", inst.name,
       "uses reserved opcode space (bits[6:0]=#{opcode})")
+  elsif opcode.include?("-")
+    results.add("1. Opcode Space", "info", inst.name,
+      "opcode bits[6:0]=#{opcode} contain variable bits — cannot classify uniquely")
   else
-    results.add("1. Opcode Space", "warn", inst.name,
-      "uses standard opcode space #{category} (bits[6:0]=#{opcode})")
+    results.add("1. Opcode Space", "info", inst.name,
+      "uses unassigned opcode space (bits[6:0]=#{opcode})")
   end
 end
 

@@ -90,6 +90,12 @@ repos:
         alias: check-jsonschema-profile-release
         files: ^spec/std/isa/profile_release/.*\.(yaml|yml)$
         args: ["--schemafile", "spec/schemas/profile_release_schema.json"]
+      - id: check-jsonschema
+        name: Validate instruction opcode files with jsonschema
+        stages: [pre-commit]
+        alias: check-jsonschema-inst-opcode
+        files: ^spec/std/isa/inst_opcode/.*\.(yaml|yml)$
+        args: ["--schemafile", "spec/schemas/inst_opcode_schema.json"]
       # Commenting because throwing errors and not sure this is complete yet
       # - id: check-jsonschema
       #   alias: check-jsonschema-manual-version

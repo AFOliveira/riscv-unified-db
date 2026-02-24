@@ -9,16 +9,16 @@ MCP server for RISC-V Unified Database
 Standalone tool for querying pre-generated YAML-based architecture data in gen/.
 Users are responsible for populating gen/ (e.g., ./do gen:resolved_arch).
 
-Provides tools for querying:
-- Instructions, CSRs, Extensions
-- IDL Functions and their usages
+Set RISCV_CPU_CONFIG env var to select the CPU configuration (default: rv64).
 
-Enhanced features:
-- Regex search support
-- Fuzzy matching for typo-tolerant searches
-- Field-specific searches
-- XLEN filtering
-- Combined multi-domain queries
+Provides tools for querying:
+- Instructions, CSRs, Extensions (with regex, fuzzy, XLEN filtering)
+- IDL Functions and their usages
+- Parameters, exception codes, interrupt codes
+- Profiles, profile releases, profile families
+- Register files
+- Enriched instruction/CSR search with encoding variables and field summaries
+- Configuration manifest and extension dependency trees
 """
 
 import asyncio
@@ -30,6 +30,24 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from _data_tools import (
+    TOOL_DEFINITIONS as DATA_TOOL_DEFINITIONS,
+)
+from _data_tools import (
+    TOOL_HANDLERS as DATA_TOOL_HANDLERS,
+)
+from _relational_tools import (
+    TOOL_CONFIG_MANIFEST,
+    TOOL_EXTENSION_DEPS,
+    search_csrs_enriched,
+    search_instructions_enriched,
+)
+from _relational_tools import (
+    config_manifest as _config_manifest,
+)
+from _relational_tools import (
+    extension_deps as _extension_deps,
+)
 from mcp.server.lowlevel.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
@@ -40,6 +58,9 @@ from mcp.types import TextContent, Tool
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GEN_DIR = REPO_ROOT / "gen"
+CONFIG_NAME = os.environ.get("RISCV_CPU_CONFIG", "rv64")
+CONFIG_DIR = GEN_DIR / "resolved_spec" / CONFIG_NAME
+_BASE_DIR = GEN_DIR / "resolved_spec" / "_"
 
 
 # ============================================================================
@@ -331,6 +352,22 @@ def _iter_extension_yaml_paths() -> list[Path]:
             if f.lower().endswith((".yaml", ".yml")):
                 p = root_p / f
                 paths.append(p)
+    return paths
+
+
+def _iter_subdir_paths(subdir: str, fallback: bool = False) -> list[Path]:
+    """Iterate YAML files under CONFIG_DIR/<subdir>, with optional fallback to _BASE_DIR."""
+    target = CONFIG_DIR / subdir
+    if not target.exists() and fallback:
+        target = _BASE_DIR / subdir
+    if not target.exists():
+        return []
+    paths: list[Path] = []
+    for root, _dirs, files in os.walk(target):
+        for f in files:
+            if f.lower().endswith((".yaml", ".yml")):
+                paths.append(Path(root) / f)
+    paths.sort(key=lambda p: str(p))
     return paths
 
 
@@ -1408,6 +1445,66 @@ async def main() -> None:
                     "required": ["name"],
                 },
             ),
+            # ===== Data Tools (_data_tools) =====
+            *(
+                Tool(name=td["name"], description=td["description"], inputSchema=td["inputSchema"])
+                for td in DATA_TOOL_DEFINITIONS
+            ),
+            # ===== Relational Tools (_relational_tools) =====
+            Tool(
+                name="search_instructions_enriched",
+                description=(
+                    "Search instructions with enriched results including access modes, "
+                    "encoding variables, and data-independent timing. "
+                    "Filters by term, keys, and extensions."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "term": {
+                            "type": "string",
+                            "description": "substring to match in filename/path",
+                        },
+                        "keys": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "top-level YAML keys that must exist",
+                        },
+                        "extensions": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "extension symbols to match",
+                        },
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 500, "default": 50},
+                    },
+                },
+            ),
+            Tool(
+                name="search_csrs_enriched",
+                description=(
+                    "Search CSRs with enriched results including register length "
+                    "and field summaries. Filters by term, keys, and extensions."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "term": {"type": "string"},
+                        "keys": {"type": "array", "items": {"type": "string"}},
+                        "extensions": {"type": "array", "items": {"type": "string"}},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 500, "default": 50},
+                    },
+                },
+            ),
+            Tool(
+                name=TOOL_CONFIG_MANIFEST["name"],
+                description=TOOL_CONFIG_MANIFEST["description"],
+                inputSchema=TOOL_CONFIG_MANIFEST["inputSchema"],
+            ),
+            Tool(
+                name=TOOL_EXTENSION_DEPS["name"],
+                description=TOOL_EXTENSION_DEPS["description"],
+                inputSchema=TOOL_EXTENSION_DEPS["inputSchema"],
+            ),
         ]
 
     @server.call_tool()
@@ -1428,17 +1525,51 @@ async def main() -> None:
         }
 
         handler = handlers.get(name)
-        if not handler:
-            raise ValueError(f"Unknown tool: {name}")
+        if handler:
+            if name == "list_gen_yaml":
+                result = await handler()
+            else:
+                result = await handler(args)
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
-        # Call handler (pass args only if function expects them)
-        if name == "list_gen_yaml":
-            result = await handler()
-        else:
-            result = await handler(args)
+        # --- Data tools (_data_tools) ---
+        if name in DATA_TOOL_HANDLERS:
+            handler_fn, subdir = DATA_TOOL_HANDLERS[name]
+            paths = _iter_subdir_paths(subdir, fallback=True)
+            result = await handler_fn(args, paths, _load_yaml)
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
-        # Return properly formatted MCP response
-        return [TextContent(type="text", text=json.dumps(result, indent=2))]
+        # --- Relational tools (_relational_tools) ---
+        if name == "search_instructions_enriched":
+            paths = _iter_subdir_paths("inst")
+            result = await search_instructions_enriched(args, paths, _load_yaml)
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        if name == "search_csrs_enriched":
+            paths = _iter_subdir_paths("csr")
+            result = await search_csrs_enriched(args, paths, _load_yaml)
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        if name == "config_manifest":
+            path_iters = {
+                "ext": _iter_subdir_paths("ext"),
+                "inst": _iter_subdir_paths("inst"),
+                "csr": _iter_subdir_paths("csr"),
+                "param": _iter_subdir_paths("param", fallback=True),
+                "exception_code": _iter_subdir_paths("exception_code", fallback=True),
+                "interrupt_code": _iter_subdir_paths("interrupt_code", fallback=True),
+                "profile": _iter_subdir_paths("profile", fallback=True),
+                "register_file": _iter_subdir_paths("register_file", fallback=True),
+            }
+            result = await _config_manifest(args, CONFIG_NAME, path_iters, _load_yaml)
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        if name == "extension_deps":
+            ext_paths = _iter_subdir_paths("ext")
+            result = await _extension_deps(args, ext_paths, _load_yaml)
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        raise ValueError(f"Unknown tool: {name}")
 
     # Run over stdio transport (for MCP clients)
     async with stdio_server() as (read_stream, write_stream):

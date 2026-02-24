@@ -18,6 +18,13 @@ The server provides organized access to:
 - **Extensions**: Browse architecture extensions with optional instruction/CSR details
 - **IDL Functions**: Search function documentation and find usages
 - **Multi-Domain Search**: Search across instructions, CSRs, and extensions simultaneously
+- **Parameters**: Search configurable architecture parameters
+- **Exception/Interrupt Codes**: Lookup trap and interrupt code definitions
+- **Profiles**: Search profile, profile release, and profile family definitions
+- **Register Files**: Search and read register file definitions
+- **Enriched Search**: Instruction and CSR search with encoding variables and field summaries
+- **Config Manifest**: Full overview of the active CPU configuration
+- **Extension Dependencies**: Resolve transitive dependency trees
 
 ### Advanced Search Capabilities
 
@@ -52,11 +59,19 @@ The server provides organized access to:
 3. Run the server:
 
    ```bash
-   # From repo root
+   # From repo root (default config: rv64)
    . .venv_mcp/bin/activate && python3 tools/mcp_gen_server/server.py
+
+   # With a specific CPU configuration
+   RISCV_CPU_CONFIG=qc_iu python3 tools/mcp_gen_server/server.py
    ```
 
 4. The server speaks MCP over stdio. Use an MCP-compatible client to connect.
+
+## Configuration
+
+Set `RISCV_CPU_CONFIG` to select the CPU configuration (default: `rv64`).
+The server reads from `gen/resolved_spec/<config>/`.
 
 ## Available Tools
 
@@ -68,25 +83,21 @@ The server provides organized access to:
 ### Instruction Tools
 
 - **search_instructions**: Advanced search with regex, fuzzy matching, field-specific search, XLEN filtering
-  - Args: `term`, `use_regex`, `fuzzy`, `field`, `xlen`, `keys`, `extensions`, `limit`
-  - Returns include XLEN info and fuzzy scores
+- **search_instructions_enriched**: Search with enriched results (access modes, encoding variables, data-independent timing)
 
 ### CSR Tools
 
 - **search_csrs**: Advanced search with same capabilities as instructions
-  - Args: `term`, `use_regex`, `fuzzy`, `field`, `xlen`, `keys`, `extensions`, `limit`
-  - Returns include XLEN info and fuzzy scores
+- **search_csrs_enriched**: Search with enriched results (register length, field summaries)
 
 ### Extension Tools
 
 - **search_extensions**: List all or get specific extension details
-  - Args: `name`, `include_instructions`, `include_csrs`, `limit`
+- **extension_deps**: Resolve direct and transitive extension dependencies
 
 ### Multi-Domain Search
 
 - **search_all**: Search across instructions, CSRs, and extensions simultaneously
-  - Args: `term`, `domains`, `use_regex`, `fuzzy`, `extensions`, `xlen`, `limit_per_domain`
-  - Returns unified results from multiple domains
 
 ### Function/IDL Tools
 
@@ -94,56 +105,44 @@ The server provides organized access to:
 - **read_function_doc**: Get complete function documentation
 - **find_function_usages**: Find where functions are used
 
-## Usage Examples
+### Data Tools
 
-### Regex Search
+- **search_params**: Search architecture parameters (ARCH_ID_VALUE, ASID_WIDTH, etc.)
+- **search_exception_codes**: Search synchronous exception codes
+- **search_interrupt_codes**: Search asynchronous interrupt codes
+- **search_profiles**: Search RISC-V profiles (RVA20S64, RVA23U64, etc.)
+- **search_profile_releases**: Search profile releases with ratification state
+- **search_profile_families**: Search profile families (RVA, RVB, etc.)
+- **search_register_files**: Search register file definitions (X, F, V)
+- **read_register_file**: Read full register file details by name
 
-```json
-{ "term": "^add.*", "use_regex": true }
-```
+### Relational Tools
 
-### Fuzzy Search (Typo-Tolerant)
-
-```json
-{ "term": "multply", "fuzzy": 0.7 }
-```
-
-### Field-Specific Search
-
-```json
-{ "term": "rd, rs1", "field": "assembly" }
-```
-
-### XLEN Filtering
-
-```json
-{ "term": "shift", "xlen": 64 }
-```
-
-### Multi-Domain Search
-
-```json
-{ "term": "atomic", "domains": ["instructions", "csrs"], "fuzzy": true }
-```
-
-## Architecture
-
-1. **Fuzzy Matching**: Levenshtein distance for typo tolerance
-2. **Utilities**: Path validation, YAML loading, XLEN detection
-3. **Path Iterators**: Domain-specific file discovery
-4. **Tool Handlers**: Organized by domain
-5. **MCP Server Setup**: Tool registration and routing
+- **config_manifest**: Full overview of the active CPU configuration
+- **extension_deps**: Resolve extension dependency tree
 
 ## Tool Summary
 
-| Tool                   | Purpose                          |
-| ---------------------- | -------------------------------- |
-| `list_gen_yaml`        | List all YAML files under gen/   |
-| `read_gen_yaml`        | Read specific YAML file          |
-| `search_instructions`  | Search instructions with filters |
-| `search_csrs`          | Search CSRs with filters         |
-| `search_extensions`    | List/query extensions from YAML  |
-| `search_all`           | Multi-domain search              |
-| `search_functions`     | Search IDL functions             |
-| `read_function_doc`    | Get function documentation       |
-| `find_function_usages` | Find function usage in code      |
+| Tool                           | Purpose                                        |
+| ------------------------------ | ---------------------------------------------- |
+| `list_gen_yaml`                | List all YAML files under gen/                 |
+| `read_gen_yaml`                | Read specific YAML file                        |
+| `search_instructions`          | Search instructions with filters               |
+| `search_instructions_enriched` | Enriched instruction search                    |
+| `search_csrs`                  | Search CSRs with filters                       |
+| `search_csrs_enriched`         | Enriched CSR search                            |
+| `search_extensions`            | List/query extensions from YAML                |
+| `search_all`                   | Multi-domain search                            |
+| `search_functions`             | Search IDL functions                           |
+| `read_function_doc`            | Get function documentation                     |
+| `find_function_usages`         | Find function usage in code                    |
+| `search_params`                | Search architecture parameters                 |
+| `search_exception_codes`       | Search exception codes                         |
+| `search_interrupt_codes`       | Search interrupt codes                         |
+| `search_profiles`              | Search profiles                                |
+| `search_profile_releases`      | Search profile releases                        |
+| `search_profile_families`      | Search profile families                        |
+| `search_register_files`        | Search register files                          |
+| `read_register_file`           | Read register file details                     |
+| `config_manifest`              | Full config overview                           |
+| `extension_deps`               | Extension dependency tree                      |

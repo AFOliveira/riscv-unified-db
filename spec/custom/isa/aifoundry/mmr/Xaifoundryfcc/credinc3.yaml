@@ -1,0 +1,23 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../schemas/mmr_schema.json
+
+$schema: mmr_schema.json#
+kind: mmr
+name: credinc3
+long_name: Credit Increment Register 3
+description: |
+  Memory-mapped register to increment fast credit counter 3.
+  Writing to this register adds credits to the specified counter.
+definedBy: Xaifoundryfcc
+physical_address: 0x01C03400D8
+length: 64
+writable: true
+fields:
+  MASK:
+    location: 31-0
+    description: |
+      Bitmask selecting which cores' credit counters to increment.
+    type: RW
+    reset_value: 0

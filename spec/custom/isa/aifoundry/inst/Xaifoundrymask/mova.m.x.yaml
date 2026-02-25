@@ -1,0 +1,37 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: mova.m.x
+long_name: Move integer register to all mask registers
+description: |
+  Unpack the integer source register rs1 into all 8 mask registers, with
+  each mask register receiving 8 bits from the source.
+definedBy:
+  anyOf:
+    - Xaifoundry
+    - Xaifoundrymask
+base: 32
+encoding:
+  match: 110101100000-----001000001111011
+  variables:
+    - name: rs1
+      location: 19-15
+assembly: xs1
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+custom_pseudocode: |
+  m0 = rs1[7:0]
+  m1 = rs1[15:8]
+  m2 = rs1[23:16]
+  m3 = rs1[31:24]
+  m4 = rs1[39:32]
+  m5 = rs1[47:40]
+  m6 = rs1[55:48]
+  m7 = rs1[63:56]

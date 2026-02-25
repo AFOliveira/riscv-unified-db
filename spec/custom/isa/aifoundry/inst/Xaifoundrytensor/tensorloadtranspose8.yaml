@@ -1,0 +1,45 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: tensorloadtranspose8
+long_name: TensorLoadTranspose8
+description: |
+  Load 8-bit data from memory with transposition into L1 scratchpad.
+  Encoded as CSRRW to tensor_load CSR (0x83F).
+definedBy:
+  anyOf:
+    - Xaifoundry
+    - Xaifoundrytensor
+base: 32
+encoding:
+  match: 100000111111-----001-----1110011
+  variables:
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: xd, xs1
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+custom_pseudocode: |
+  usemsk = (MSK == 1);
+  dst = START;
+  VA = sext(ADDR << 4, 64);
+  count = ROWS + 1;
+  stride = zext(STRIDE << 6, 64);
+  if (!usemsk || tensor_mask != 0) {
+  // Load 64 x count bytes
+  for (i = 0; i < 64; i++) {
+  
+  for (c = 0; c < 64; c++) {
+  L1Scp[(dst + r) % 48].b[c] = temp[c].b[r];
+  }
+  }
+  }

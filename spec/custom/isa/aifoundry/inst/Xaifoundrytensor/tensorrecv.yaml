@@ -1,0 +1,54 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: tensorrecv
+long_name: TensorRecv
+description: |
+  Receive results from the tensor execution unit back into floating-point registers.
+  Encoded as CSRRW to tensor_reduce CSR (0x800).
+definedBy:
+  anyOf:
+    - Xaifoundry
+    - Xaifoundrytensor
+base: 32
+encoding:
+  match: 100000000000-----001-----1110011
+  variables:
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: xd, xs1
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+custom_pseudocode: |
+  fstart = FREG;
+  op
+  = FUNCT;
+  fnum = COUNT;
+  partner = 2*SOURCE;
+  // notify sender that we can accept data
+  send(partner, REDUCE_START);
+  for (i = 0; i < fnum; i++) {
+  // wait until data is available
+  recv(partner, &temp);
+  k = (fstart + i) % 32;
+  for (j = 0; j < 8; j++) {
+  switch (op) {
+  case FADD: f[k].e<j> = f32_add(temp.e<j>, f[k].e<j>); break;
+  case FMAX: f[k].e<j> = f32_max(temp.e<j>, f[k].e<j>); break;
+  case FMIN: f[k].e<j> = f32_min(temp.e<j>, f[k].e<j>); break;
+  case ADD : f[k].e<j> = temp.e<j> + f[k].e<j>; break;
+  case MAX : f[k].e<j> = max(temp.e<j>, f[k].e<j>); break;
+  case MIN : f[k].e<j> = min(temp.e<j>, f[k].e<j>); break;
+  case MOVE: f[k].e<j> = temp.e<j>; break;
+  }
+  }
+  }

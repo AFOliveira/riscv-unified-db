@@ -1,0 +1,29 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: mova.x.m
+long_name: Move all mask registers to integer register
+description: |
+  Pack all 8 mask registers (64 bits total) into a single integer destination
+  register rd.
+definedBy:
+  anyOf:
+    - Xaifoundry
+    - Xaifoundrymask
+base: 32
+encoding:
+  match: 11010110000000000000-----1111011
+  variables:
+    - name: rd
+      location: 11-7
+assembly: xd
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+custom_pseudocode: "rd = (m7 << 56) | (m6 << 48) | (m5 << 40) | (m4 << 32) | (m3 << 24) | (m2 << 16) | (m1 << 8) | m0"

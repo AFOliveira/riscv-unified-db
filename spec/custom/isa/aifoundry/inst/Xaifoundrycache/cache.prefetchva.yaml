@@ -1,0 +1,31 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: cache.prefetchva
+long_name: Cache Prefetch by Virtual Address
+description: |
+  Prefetch cache line by virtual address. Encoded as CSRRW to CSR 0x81F (U-mode).
+  The source register rs1 contains the virtual address.
+definedBy:
+  anyOf:
+    - Xaifoundry
+    - Xaifoundrycache
+base: 32
+encoding:
+  match: 100000011111-----001-----1110011
+  variables:
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: xd, xs1
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+custom_pseudocode: "N/A"

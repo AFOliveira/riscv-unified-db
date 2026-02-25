@@ -1,0 +1,39 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: flbarrier
+long_name: FLBarrier
+description: |
+  Execute a barrier synchronization among all participating ET-Minion cores within the
+  Shire. Encoded as CSRRW to CSR address 0x820. The source register rs1 layout:
+  bits 4:0 = barrier number, bits 12:5 = match value minus 1 (expected number of
+  threads minus 1 that will join the barrier). The instruction atomically increments
+  the indicated barrier counter. After incrementing, the barrier counter is compared
+  to the match value plus 1. On match, rd is set to 1 and the barrier counter is reset
+  to zero. Otherwise, rd is set to 0.
+definedBy:
+  anyOf:
+    - Xaifoundry
+    - Xaifoundryflb
+base: 32
+encoding:
+  match: 100000100000-----001-----1110011
+  variables:
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: xd, xs1
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+custom_pseudocode: |
+  Newval = atomic_increment(barrier_counter[xs[4:0]]);
+  xd = (newval == (xs[12:5]+1)) ? 0x1 : 0x0;
+  if(xd == 1) barrier_counter[xs[4:0]] = 0;

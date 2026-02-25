@@ -1,0 +1,42 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: fsat8.pi
+long_name: Saturate packed integer to INT8
+description: |
+  Saturate each 32-bit signed integer lane to the INT8 range [-128, 127],
+  writing the result to the destination packed integer register.
+definedBy:
+  anyOf:
+    - Xaifoundry
+    - Xaifoundrypi
+base: 32
+encoding:
+  match: 000001100000-----011-----1111011
+  variables:
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: fd, fs1
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+custom_pseudocode: |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) {
+  if (fs1.e<i> > 127) {
+  fd.e<i> = 127;
+  } else if (fs.e<1> < -128) {
+  fd.e<i> = -128;
+  } else {
+  fd.e<i> = fs1.e<i>;
+  }
+  }
+  }

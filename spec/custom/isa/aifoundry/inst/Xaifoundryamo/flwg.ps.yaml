@@ -1,0 +1,38 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: flwg.ps
+long_name: Load word global PS
+description: |
+  Load 32-bit word from global memory via memory controller, broadcast to all PS lanes.
+definedBy:
+  anyOf:
+    - Xaifoundry
+    - Xaifoundryamo
+base: 32
+encoding:
+  match: 000100100000-----111-----0001011
+  variables:
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: fd, fs2(xs1)
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+custom_pseudocode: |
+  if ( m0.bit0 ) fd.e0 = GLOBAL_MEM(rs1 + 0, 32) if
+  ( m0.bit1 ) fd.e1 = GLOBAL_MEM(rs1 + 4, 32) if (
+  m0.bit2 ) fd.e2 = GLOBAL_MEM(rs1 + 8, 32) if (
+  m0.bit3 ) fd.e3 = GLOBAL_MEM(rs1 + 12, 32) if (
+  m0.bit4 ) fd.e4 = GLOBAL_MEM(rs1 + 16, 32) if (
+  m0.bit5 ) fd.e5 = GLOBAL_MEM(rs1 + 20, 32) if (
+  m0.bit6 ) fd.e6 = GLOBAL_MEM(rs1 + 24, 32) if (
+  m0.bit7 ) fd.e7 = GLOBAL_MEM(rs1 + 28, 32)

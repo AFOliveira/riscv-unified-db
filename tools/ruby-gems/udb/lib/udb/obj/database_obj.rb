@@ -25,6 +25,7 @@ module Udb
         InstructionSubtype = new("instruction_subtype")
         Csr = new("csr")
         CsrField = new("csr_field")
+        Mmr = new("mmr")
         Extension = new("extension")
         RegisterFile = new("register_file")
         Parameter = new("parameter")

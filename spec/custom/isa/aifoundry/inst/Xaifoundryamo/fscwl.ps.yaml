@@ -1,0 +1,40 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: fscwl.ps
+long_name: Scatter word local PS
+description: |
+  Scatter words to local memory using per-lane addresses.
+definedBy:
+  anyOf:
+    - Xaifoundry
+    - Xaifoundryamo
+base: 32
+encoding:
+  match: 1101000----------111-----0001011
+  variables:
+    - name: rs2
+      location: 24-20
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: fs3, fs2(xs1)
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+custom_pseudocode: |
+  if ( m0.bit0 ) LOCAL_MEM(rs2 + fs1.e0, 32) = fs3.e0
+  if ( m0.bit1 ) LOCAL_MEM(rs2 + fs1.e1, 32) = fs3.e1
+  if ( m0.bit2 ) LOCAL_MEM(rs2 + fs1.e2, 32) = fs3.e2
+  if ( m0.bit3 ) LOCAL_MEM(rs2 + fs1.e3, 32) = fs3.e3
+  if ( m0.bit4 ) LOCAL_MEM(rs2 + fs1.e4, 32) = fs3.e4
+  if ( m0.bit5 ) LOCAL_MEM(rs2 + fs1.e5, 32) = fs3.e5
+  if ( m0.bit6 ) LOCAL_MEM(rs2 + fs1.e6, 32) = fs3.e6
+  if ( m0.bit7 ) LOCAL_MEM(rs2 + fs1.e7, 32) = fs3.e7

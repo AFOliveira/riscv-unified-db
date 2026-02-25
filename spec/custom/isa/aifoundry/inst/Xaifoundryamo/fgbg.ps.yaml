@@ -1,0 +1,40 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: fgbg.ps
+long_name: Gather byte global PS
+description: |
+  Gather bytes from global memory using per-lane addresses via memory controller.
+definedBy:
+  anyOf:
+    - Xaifoundry
+    - Xaifoundryamo
+base: 32
+encoding:
+  match: 1000001----------111-----0001011
+  variables:
+    - name: rs2
+      location: 24-20
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: fd, fs2(xs1)
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+custom_pseudocode: |
+  if ( m0.bit0 ) GLOBAL_MEM(rs1 + 0, 32) = fs3.e0 if
+  ( m0.bit1 ) GLOBAL_MEM(rs1 + 4, 32) = fs3.e1 if (
+  m0.bit2 ) GLOBAL_MEM(rs1 + 8, 32) = fs3.e2 if (
+  m0.bit3 ) GLOBAL_MEM(rs1 + 12, 32) = fs3.e3 if (
+  m0.bit4 ) GLOBAL_MEM(rs1 + 16, 32) = fs3.e4 if (
+  m0.bit5 ) GLOBAL_MEM(rs1 + 20, 32) = fs3.e5 if (
+  m0.bit6 ) GLOBAL_MEM(rs1 + 24, 32) = fs3.e6 if (
+  m0.bit7 ) GLOBAL_MEM(rs1 + 28, 32) = fs3.e7

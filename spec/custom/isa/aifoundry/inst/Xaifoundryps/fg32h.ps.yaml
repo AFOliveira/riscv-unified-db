@@ -1,0 +1,39 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: fg32h.ps
+long_name: Gather halfwords from 32-byte aligned block
+description: |
+  Gather halfwords from a 32-byte aligned block.
+definedBy:
+  anyOf:
+    - Xaifoundry
+    - Xaifoundryps
+base: 32
+encoding:
+  match: 0001000----------001-----0001011
+  variables:
+    - name: rs2
+      location: 24-20
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: fd, fs2(xs1)
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+custom_pseudocode: |
+  if (m0 != 0) {
+  tmp = MEM(rs2[63:5] << 5, VLEN);
+  for (i = 0; i < VLEN/32; i++) {
+  m = (rs2[4:1] + rs1[4*n+3:4*n]) % 16;
+  if (m0.bit<i>) fd.e<i> = sext(tmp[16*m+15:16*m], 32);
+  }
+  }

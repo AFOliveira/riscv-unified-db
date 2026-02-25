@@ -50,6 +50,7 @@ require "yaml"
 require_relative "obj/certificate"
 require_relative "obj/csr"
 require_relative "obj/csr_field"
+require_relative "obj/mmr"
 require_relative "obj/register_file"
 require_relative "obj/exception_code"
 require_relative "obj/extension"
@@ -123,6 +124,12 @@ module Udb
         arch_dir: "csr",
         klass: Csr,
         kind: DatabaseObject::Kind::Csr
+      },
+      {
+        fn_name: "mmr",
+        arch_dir: "mmr",
+        klass: Mmr,
+        kind: DatabaseObject::Kind::Mmr
       },
       {
         fn_name: "register_file",

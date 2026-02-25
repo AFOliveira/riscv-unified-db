@@ -1,0 +1,98 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: tensorima8a32
+long_name: TensorIMA8A32
+description: |
+  Multiply two INT8 matrices (A and B), optionally add INT32 accumulator C0, write INT32
+  result to FP registers. Uses the IMA units in each VPU lane (4 INT8
+  multiply-accumulates per lane per cycle).
+  Encoded as CSRRW to tensor_fma CSR (0x801).
+definedBy:
+  anyOf:
+    - Xaifoundry
+    - Xaifoundrytensor
+base: 32
+encoding:
+  match: 100000000001-----001-----1110011
+  variables:
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: xd, xs1
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+custom_pseudocode: |
+  usemsk = (MSK == 1);
+  bcols = (BCOLS + 1) * 4;
+  arows = AROWS + 1;
+  acols = (ACOLS + 1) * 4;
+  offset = AOFFSET * 4;
+  tenc2rf = (DST == 1);
+  bsgnd = (UB == 0);
+  asgnd = (UA == 0);
+  l1scpb = (TENB == 0);
+  bstart = BSTART;
+  astart = ASTART;
+  for (k = 0; k < acols; k += 4) {
+  tmp = l1scpb ? L1Scp[(bstart+k/4)%48] : TenB[k/4];
+  for (i = 0; i < arows; i++) {
+  if (usemsk && !tensor_mask[i]) {
+  wrf = (tenc2rf && k == acols-4);
+  mul = (MUL && k == 0);
+  
+  if (mul && wrf) {
+  for (j = 0; j < bcols; j++) {
+  f[i*2+j/8].e<j%8> = 0;
+  }
+  } else if (mul) {
+  for (j = 0; j < bcols; j++) {
+  TenC[i*2+j/8].e<j%8> = 0;
+  }
+  } else if (wrf) {
+  for (j = 0; j < bcols; j++) {
+  f[i*2+j/8].e<j%8> = TenC[i*2+j/8].e<j%8>;
+  }
+  }
+  continue;
+  }
+  t1 = L1Scp[(astart+i)%48].b[offset+k+0];
+  t2 = L1Scp[(astart+i)%48].b[offset+k+1];
+  t3 = L1Scp[(astart+i)%48].b[offset+k+2];
+  t4 = L1Scp[(astart+i)%48].b[offset+k+3];
+  a1 = asgnd ? sext(t1, 32) : zext(t1, 32);
+  a2 = asgnd ? sext(t2, 32) : zext(t2, 32);
+  a3 = asgnd ? sext(t3, 32) : zext(t3, 32);
+  a4 = asgnd ? sext(t4, 32) : zext(t4, 32);
+  for (j = 0; j < bcols; j++) {
+  t1 = tmp.b[j*4+0];
+  t2 = tmp.b[j*4+1];
+  t3 = tmp.b[j*4+2];
+  t4 = tmp.b[j*4+3];
+  b1 = bsgnd ? sext(t1, 32) : zext(t1, 32);
+  b2 = bsgnd ? sext(t2, 32) : zext(t2, 32);
+  b3 = bsgnd ? sext(t3, 32) : zext(t3, 32);
+  b4 = bsgnd ? sext(t4, 32) : zext(t4, 32);
+  if (MUL && k == 0) {
+  c = a1*b1 + a2*b2 + a3*b3 + a4*b4;
+  } else {
+  c0 = TenC[i*2+j/8].e<j%8>;
+  c = c0 + a1*b1 + a2*b2 + a3*b3 + a4*b4;
+  }
+  if (tenc2rf && k == acols-4) {
+  f[i*2+j/8].e<j%8> = c;
+  } else {
+  TenC[i*2+j/8].e<j%8> = c;
+  }
+  
+  }
+  }
+  }

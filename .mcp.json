@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "riscv-isa-aifoundry": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["tools/mcp_gen_server/server.py"],
+      "env": {
+        "RISCV_CPU_CONFIG": "aifoundry"
+      }
+    }
+  }
+}

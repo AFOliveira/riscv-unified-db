@@ -30,6 +30,12 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from _compliance_tools import (
+    TOOL_CHECK_COMPLIANCE,
+)
+from _compliance_tools import (
+    check_custom_compliance as _check_custom_compliance,
+)
 from _data_tools import (
     TOOL_DEFINITIONS as DATA_TOOL_DEFINITIONS,
 )
@@ -1505,6 +1511,12 @@ async def main() -> None:
                 description=TOOL_EXTENSION_DEPS["description"],
                 inputSchema=TOOL_EXTENSION_DEPS["inputSchema"],
             ),
+            # --- Compliance tools ---
+            Tool(
+                name=TOOL_CHECK_COMPLIANCE["name"],
+                description=TOOL_CHECK_COMPLIANCE["description"],
+                inputSchema=TOOL_CHECK_COMPLIANCE["inputSchema"],
+            ),
         ]
 
     @server.call_tool()
@@ -1567,6 +1579,15 @@ async def main() -> None:
         if name == "extension_deps":
             ext_paths = _iter_subdir_paths("ext")
             result = await _extension_deps(args, ext_paths, _load_yaml)
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        # --- Compliance tools ---
+        if name == "check_custom_compliance":
+            path_iters = {
+                "inst": _iter_subdir_paths("inst"),
+                "inst_opcode": _iter_subdir_paths("inst_opcode", fallback=True),
+            }
+            result = await _check_custom_compliance(args, CONFIG_NAME, path_iters, _load_yaml)
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
         raise ValueError(f"Unknown tool: {name}")

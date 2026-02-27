@@ -1,0 +1,181 @@
+---
+name: Custom Extension Compliance Check
+permissions:
+  contents: read
+  pull-requests: write
+'on':
+  pull_request:
+    paths:
+      - 'arch/inst/X*/**'
+      - 'arch/csr/X*/**'
+      - 'ext/X*/**'
+      - 'cfgs/**'
+  workflow_dispatch:
+    inputs:
+      config:
+        description: 'CPU config to check (default: aifoundry)'
+        required: false
+        default: 'aifoundry'
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: true
+
+env:
+  DOCKER: 1
+
+jobs:
+  build-container:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          submodules: 'true'
+      - name: Get container tag
+        run: |
+          TAG=$(cat bin/.container-tag)
+          echo "TAG=$TAG" >> $GITHUB_ENV
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+      - name: Build and export
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
+        with:
+          push: false
+          file: "./.devcontainer/Dockerfile"
+          platforms: linux/amd64
+          tags: ghcr.io/riscv/udb:${{ env.TAG }}
+          outputs: type=docker,dest=${{ runner.temp }}/docker_image.tar
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Upload container
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: docker_image
+          path: "${{ runner.temp }}/docker_image.tar"
+
+  compliance-check:
+    runs-on: ubuntu-latest
+    needs: build-container
+    strategy:
+      matrix:
+        config:
+          - aifoundry
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          submodules: 'true'
+
+      - name: Download docker image
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: docker_image
+          path: "${{ runner.temp }}"
+
+      - name: Load image
+        run: docker load --input ${{ runner.temp }}/docker_image.tar
+
+      - name: Generate resolved spec
+        run: ./do gen:resolved_arch CFG=${{ matrix.config }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install pyyaml
+
+      - name: Run compliance check
+        id: compliance
+        run: |
+          python3 -c "
+          import asyncio, json, sys
+          sys.path.insert(0, 'tools/mcp_gen_server')
+          from pathlib import Path
+          from _compliance_tools import check_custom_compliance
+          import yaml
+
+          config = '${{ matrix.config }}'
+          gen_dir = Path('gen/resolved_spec') / config
+          base_dir = Path('gen/resolved_spec/_')
+
+          def load_yaml(p):
+              with open(p) as f:
+                  return yaml.safe_load(f)
+
+          def iter_paths(subdir, fallback=False):
+              paths = []
+              d = gen_dir / subdir
+              if d.exists():
+                  paths.extend(sorted(d.rglob('*.yaml')))
+              if fallback:
+                  bd = base_dir / subdir
+                  if bd.exists():
+                      paths.extend(sorted(bd.rglob('*.yaml')))
+              return paths
+
+          path_iters = {
+              'inst': iter_paths('inst'),
+              'inst_opcode': iter_paths('inst_opcode', fallback=True),
+          }
+
+          result = asyncio.run(check_custom_compliance({}, config, path_iters, load_yaml))
+
+          # Write full JSON report
+          with open('compliance-report.json', 'w') as f:
+              json.dump(result, f, indent=2)
+
+          # Write markdown summary
+          summary = result['summary']
+          with open('compliance-summary.md', 'w') as f:
+              f.write(f'## Compliance Check: {config}\n\n')
+              f.write(f'**{result[\"custom_instructions\"]}** custom instructions checked ')
+              f.write(f'against **{result[\"standard_instructions\"]}** standard instructions\n\n')
+              if summary['warn'] == 0:
+                  f.write('All checks passed.\n')
+              else:
+                  f.write(f'| Severity | Count |\n|---|---|\n')
+                  f.write(f'| Warnings | {summary[\"warn\"]} |\n')
+                  f.write(f'| Info | {summary[\"info\"]} |\n\n')
+                  for cat, items in result['findings'].items():
+                      warns = [i for i in items if i['severity'] == 'warn']
+                      if not warns:
+                          continue
+                      f.write(f'### {cat} ({len(warns)} warnings)\n\n')
+                      # Group by instruction
+                      by_inst = {}
+                      for item in warns:
+                          by_inst.setdefault(item['inst'], []).append(item)
+                      for inst, findings in list(by_inst.items())[:10]:
+                          f.write(f'**{inst}**\n')
+                          for finding in findings[:3]:
+                              f.write(f'- {finding[\"message\"]}\n')
+                              if 'suggestion' in finding:
+                                  f.write(f'  - *Suggestion*: {finding[\"suggestion\"]}\n')
+                          if len(findings) > 3:
+                              f.write(f'- ... and {len(findings) - 3} more\n')
+                          f.write('\n')
+                      if len(by_inst) > 10:
+                          f.write(f'*... and {len(by_inst) - 10} more instructions*\n\n')
+
+          print(f'Compliance check complete: {summary[\"warn\"]} warnings, {summary[\"info\"]} info')
+          # Exit with warning count (non-zero = attention needed, but don't fail CI)
+          " 2>&1 | tee compliance-output.txt
+
+      - name: Upload compliance report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: compliance-report-${{ matrix.config }}
+          path: |
+            compliance-report.json
+            compliance-summary.md
+
+      - name: Post PR comment
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db
+        with:
+          header: compliance-${{ matrix.config }}
+          path: compliance-summary.md

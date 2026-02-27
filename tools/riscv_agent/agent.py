@@ -5,10 +5,13 @@
 
 """CLI entry point for RISC-V ISA specialized agents.
 
-Routes to one of three agents:
-  explore    - Fast ISA lookups (Haiku)
-  compliance - Custom extension compliance checking (Sonnet)
-  review     - YAML spec file code review (Sonnet)
+Routes to one of six agents:
+  explore     - Fast ISA lookups (Haiku)
+  compliance  - Custom extension compliance checking (Sonnet)
+  review      - YAML spec file code review (Sonnet)
+  spec-to-sim - Sync ISA spec changes to et-platform simulator (Sonnet)
+  zephyr      - Zephyr board/SoC updates for Erbium (Sonnet)
+  orchestrate - Top-level dispatcher that coordinates sub-agents (Sonnet)
 
 Each agent uses the RISC-V UDB MCP server for structured ISA data access.
 """
@@ -97,6 +100,27 @@ def main() -> None:
     )
     p_review.add_argument("prompt", nargs="?", help="File path or one-shot question")
 
+    # --- spec-to-sim ---
+    p_sim = sub.add_parser(
+        "spec-to-sim",
+        help="Sync ISA spec changes to et-platform simulator",
+    )
+    p_sim.add_argument("prompt", nargs="?", help="One-shot question")
+
+    # --- zephyr ---
+    p_zephyr = sub.add_parser(
+        "zephyr",
+        help="Zephyr board/SoC updates for Erbium",
+    )
+    p_zephyr.add_argument("prompt", nargs="?", help="One-shot question")
+
+    # --- orchestrate ---
+    p_orch = sub.add_parser(
+        "orchestrate",
+        help="Top-level dispatcher coordinating sub-agents",
+    )
+    p_orch.add_argument("prompt", nargs="?", help="One-shot question or PR number")
+
     args = parser.parse_args()
 
     # Import the agent module and build options
@@ -106,6 +130,12 @@ def main() -> None:
         from agents.compliance import build_options
     elif args.agent == "review":
         from agents.reviewer import build_options
+    elif args.agent == "spec-to-sim":
+        from agents.spec_to_sim import build_options
+    elif args.agent == "zephyr":
+        from agents.zephyr_agent import build_options
+    elif args.agent == "orchestrate":
+        from agents.orchestrator import build_options
     else:
         parser.error(f"Unknown agent: {args.agent}")
 

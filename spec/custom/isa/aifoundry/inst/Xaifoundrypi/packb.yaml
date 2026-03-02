@@ -8,8 +8,8 @@ kind: instruction
 name: packb
 long_name: Pack 32 bits from operands
 description: |
-  Pack 32-bit values from the two packed integer source registers into the
-  destination packed integer register.
+  Pack low bytes from two integer source registers into the destination
+  integer register.
 definedBy:
   anyOf:
     - Xaifoundry
@@ -24,7 +24,7 @@ encoding:
       location: 19-15
     - name: rd
       location: 11-7
-assembly: fd, fs1, fs2
+assembly: xd, xs1, xs2
 access:
   s: always
   u: always

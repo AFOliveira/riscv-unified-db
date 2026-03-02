@@ -23,7 +23,7 @@ encoding:
       location: 19-15
     - name: rd
       location: 11-7
-assembly: fd, fs1, fs2, fs3
+assembly: fd, fs1, fs2
 access:
   s: always
   u: always

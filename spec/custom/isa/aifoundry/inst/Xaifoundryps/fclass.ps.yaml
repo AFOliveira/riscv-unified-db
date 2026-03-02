@@ -21,7 +21,7 @@ encoding:
       location: 19-15
     - name: rd
       location: 11-7
-assembly: xd, fs1
+assembly: fd, fs1
 access:
   s: always
   u: always

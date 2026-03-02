@@ -23,7 +23,7 @@ encoding:
       location: 19-15
     - name: rs3
       location: 11-7
-assembly: fs3, fs2(xs1)
+assembly: fs3, fs1(xs2)
 access:
   s: always
   u: always

@@ -8,7 +8,7 @@ kind: instruction
 name: feq.ps
 long_name: Packed single compare equal
 description: |
-  Packed single compare equal. Result is bitmask in integer register.
+  Packed single compare equal. Result is all-1s/all-0s per element in packed register.
 definedBy:
   anyOf:
     - Xaifoundry
@@ -23,7 +23,7 @@ encoding:
       location: 19-15
     - name: rd
       location: 11-7
-assembly: xd, fs1, fs2
+assembly: fd, fs1, fs2
 access:
   s: always
   u: always

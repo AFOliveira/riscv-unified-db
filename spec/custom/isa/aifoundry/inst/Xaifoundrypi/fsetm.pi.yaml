@@ -16,12 +16,12 @@ definedBy:
     - Xaifoundrypi
 base: 32
 encoding:
-  match: 101001100000-----100-----1111011
+  match: 101001100000-----10000---1111011
   variables:
     - name: rs1
       location: 19-15
     - name: rd
-      location: 11-7
+      location: 9-7
 assembly: md, fs1
 access:
   s: always

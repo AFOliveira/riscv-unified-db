@@ -15,14 +15,14 @@ definedBy:
     - Xaifoundryps
 base: 32
 encoding:
-  match: 1010000----------110-----1111011
+  match: 1010000----------11000---1111011
   variables:
     - name: rs2
       location: 24-20
     - name: rs1
       location: 19-15
     - name: rd
-      location: 11-7
+      location: 9-7
 assembly: md, fs1, fs2
 access:
   s: always

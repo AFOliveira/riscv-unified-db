@@ -21,18 +21,28 @@ Enhanced features:
 - Combined multi-domain queries
 """
 
+from __future__ import annotations
+
 import asyncio
 import contextlib
 import json
 import os
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
-from mcp.server.lowlevel.server import Server
-from mcp.server.stdio import stdio_server
-from mcp.types import TextContent, Tool
+
+try:
+    from mcp.server.lowlevel.server import Server
+    from mcp.server.stdio import stdio_server
+    from mcp.types import TextContent, Tool
+except Exception:
+    Server = None
+    stdio_server = None
+    TextContent = None
+    Tool = None
 
 # ============================================================================
 # Constants and Configuration
@@ -40,6 +50,16 @@ from mcp.types import TextContent, Tool
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GEN_DIR = REPO_ROOT / "gen"
+CPU_CONFIG = os.environ.get("RISCV_CPU_CONFIG", "").strip()
+_YAML_CACHE: dict[str, dict] = {}
+_PATH_CACHE: dict[str, list[Path]] = {}
+_RDL_ENGINE = None
+_RDL_LOAD_ERROR: str | None = None
+
+RDL_MCP_DIR_CANDIDATES = (
+    Path("/root/afonso/hdl-et/regblocks/scripts/rdl_mcp"),
+    Path("/home/afonso/docsET/hdl-et/regblocks/scripts/rdl_mcp"),
+)
 
 
 # ============================================================================
@@ -143,25 +163,40 @@ def _ensure_in_gen(path: Path) -> Path:
 
 def _load_yaml(path: Path) -> dict:
     """Load and parse a YAML file."""
-    with open(path, encoding="utf-8") as fh:
-        return yaml.safe_load(fh) or {}
+    key = str(path.resolve())
+    if key not in _YAML_CACHE:
+        with open(path, encoding="utf-8") as fh:
+            _YAML_CACHE[key] = yaml.safe_load(fh) or {}
+    return _YAML_CACHE[key]
 
 
-def _extract_defined_by(data: dict) -> list[str]:
-    """Extract extension names from definedBy field (handles string, list, dict with anyOf/allOf)."""
-    defined = data.get("definedBy")
+def _flatten_defined_by(defined: Any) -> list[str]:
+    """Extract extension names from UDB definedBy clauses."""
     if defined is None:
         return []
     if isinstance(defined, str):
         return [defined]
     if isinstance(defined, list):
-        return [str(x) for x in defined]
+        names: list[str] = []
+        for item in defined:
+            names.extend(_flatten_defined_by(item))
+        return names
     if isinstance(defined, dict):
+        if "name" in defined:
+            return [str(defined["name"])]
         # handle anyOf / allOf patterns
+        names: list[str] = []
         for k in ("anyOf", "allOf", "oneOf"):
             if k in defined and isinstance(defined[k], list):
-                return [str(x) for x in defined[k]]
+                for item in defined[k]:
+                    names.extend(_flatten_defined_by(item))
+        return names
     return []
+
+
+def _extract_defined_by(data: dict) -> list[str]:
+    """Extract extension names from a YAML object's definedBy field."""
+    return _flatten_defined_by(data.get("definedBy"))
 
 
 def _extension_in_path(rel_parts: list[str]) -> str | None:
@@ -176,19 +211,12 @@ def _csr_extensions(data: dict) -> set[str]:
     """Extract all extension names from CSR (top-level and field-level definedBy)."""
     exts: set[str] = set()
     top = data.get("definedBy")
-    if isinstance(top, str):
-        exts.add(top)
-    elif isinstance(top, list):
-        exts.update(str(x) for x in top)
+    exts.update(_flatten_defined_by(top))
     fields = data.get("fields")
     if isinstance(fields, dict):
         for fld in fields.values():
             if isinstance(fld, dict) and "definedBy" in fld:
-                db = fld.get("definedBy")
-                if isinstance(db, str):
-                    exts.add(db)
-                elif isinstance(db, list):
-                    exts.update(str(x) for x in db)
+                exts.update(_flatten_defined_by(fld.get("definedBy")))
     return exts
 
 
@@ -279,47 +307,316 @@ def _matches_field_search(data: dict, field: str, pattern: str, use_regex: bool 
 
 
 # ============================================================================
+# Domain / Source Tags
+# ============================================================================
+
+
+UDB_TOOL_NAMES = {
+    "list_gen_yaml",
+    "read_gen_yaml",
+    "get_config",
+    "server_stats",
+    "search_instructions",
+    "search_csrs",
+    "search_mmrs",
+    "search_extensions",
+    "search_all",
+    "search_functions",
+    "read_function_doc",
+    "find_function_usages",
+}
+
+RDL_TOOL_NAMES = {
+    "get_rdl_status",
+    "search_rdl_registers",
+    "search_rdl_fields",
+    "get_rdl_register_details",
+    "resolve_rdl_mmio_address",
+    "resolve_rdl_esr_address",
+}
+
+
+def _tag_result(tool_name: str, result: Any) -> Any:
+    """Attach a source domain tag without disturbing non-dict tool outputs."""
+    if not isinstance(result, dict):
+        return result
+    if tool_name in UDB_TOOL_NAMES:
+        return {
+            "domain": "udb",
+            "source": "RISC-V Unified Database",
+            **result,
+        }
+    if tool_name in RDL_TOOL_NAMES:
+        return {
+            "domain": "rdl",
+            "source": "SystemRDL register map",
+            **result,
+        }
+    return result
+
+
+# ============================================================================
+# RDL Register-Map Tools
+# ============================================================================
+
+
+def _rdl_mcp_dir() -> Path:
+    override = os.environ.get("RDL_MCP_DIR")
+    if override:
+        return Path(override).expanduser().resolve()
+    for candidate in RDL_MCP_DIR_CANDIDATES:
+        if candidate.exists():
+            return candidate.resolve()
+    return RDL_MCP_DIR_CANDIDATES[0].resolve()
+
+
+def _rdl_missing_response() -> dict[str, Any]:
+    return {
+        "available": False,
+        "rdl_mcp_dir": str(_rdl_mcp_dir()),
+        "error": _RDL_LOAD_ERROR or "RDL query engine unavailable",
+    }
+
+
+def _ensure_rdl_engine():
+    global _RDL_ENGINE, _RDL_LOAD_ERROR
+    if _RDL_ENGINE is not None:
+        return _RDL_ENGINE
+
+    module_dir = _rdl_mcp_dir()
+    if not module_dir.exists():
+        _RDL_LOAD_ERROR = f"RDL MCP directory not found: {module_dir}"
+        return None
+
+    if str(module_dir) not in sys.path:
+        sys.path.insert(0, str(module_dir))
+
+    try:
+        from queries import QueryEngine  # type: ignore
+    except Exception as exc:
+        _RDL_LOAD_ERROR = f"Failed to import RDL query engine: {exc}"
+        return None
+
+    try:
+        _RDL_ENGINE = QueryEngine()
+    except Exception as exc:
+        _RDL_LOAD_ERROR = f"Failed to build RDL query engine: {exc}"
+        return None
+    return _RDL_ENGINE
+
+
+async def get_rdl_status(_args: dict[str, Any] | None = None):
+    engine = _ensure_rdl_engine()
+    if engine is None:
+        return _rdl_missing_response()
+    try:
+        result = engine.refresh_index({})
+    except Exception as exc:
+        return {"available": False, "rdl_mcp_dir": str(_rdl_mcp_dir()), "error": str(exc)}
+    result["available"] = True
+    result["rdl_mcp_dir"] = str(_rdl_mcp_dir())
+    return result
+
+
+async def search_rdl_registers(args: dict[str, Any]):
+    engine = _ensure_rdl_engine()
+    if engine is None:
+        return _rdl_missing_response()
+    return engine.search_registers(
+        {
+            "term": args.get("term", ""),
+            "domain": args.get("domain", ""),
+            "addrmap": args.get("addrmap", ""),
+            "limit": int(args.get("limit") or 10),
+        }
+    )
+
+
+async def search_rdl_fields(args: dict[str, Any]):
+    engine = _ensure_rdl_engine()
+    if engine is None:
+        return _rdl_missing_response()
+    query = {
+        "term": args.get("term", ""),
+        "domain": args.get("domain", ""),
+        "register": args.get("register", ""),
+        "limit": int(args.get("limit") or 10),
+    }
+    return engine.search_fields(query)
+
+
+async def get_rdl_register_details(args: dict[str, Any]):
+    engine = _ensure_rdl_engine()
+    if engine is None:
+        return _rdl_missing_response()
+    name_or_path = args.get("name_or_path")
+    if not isinstance(name_or_path, str) or not name_or_path:
+        raise ValueError("'name_or_path' is required and must be a string")
+    return engine.read_register({"name_or_path": name_or_path})
+
+
+async def resolve_rdl_mmio_address(args: dict[str, Any]):
+    engine = _ensure_rdl_engine()
+    if engine is None:
+        return _rdl_missing_response()
+    address = args.get("address")
+    if not isinstance(address, str):
+        raise ValueError("'address' is required and must be a string")
+    return engine.resolve_mmio_address(
+        {
+            "address": address,
+            "top_map": args.get("top_map", "top_cpu_mm"),
+        }
+    )
+
+
+async def resolve_rdl_esr_address(args: dict[str, Any]):
+    engine = _ensure_rdl_engine()
+    if engine is None:
+        return _rdl_missing_response()
+    address = args.get("address")
+    if not isinstance(address, str):
+        raise ValueError("'address' is required and must be a string")
+    return engine.resolve_esr_address(
+        {
+            "address": address,
+            "platform": args.get("platform", "erbium"),
+        }
+    )
+
+
+# ============================================================================
 # Path Iterators (domain-specific file discovery)
 # ============================================================================
 
 
-def _iter_instruction_yaml_paths() -> list[Path]:
-    """Find all instruction YAML files."""
-    paths: list[Path] = []
+def _active_data_roots() -> list[Path]:
+    """Return generated data roots, scoped by RISCV_CPU_CONFIG when set."""
     if not GEN_DIR.exists():
-        return paths
-    for root, _dirs, files in os.walk(GEN_DIR):
-        root_p = Path(root)
-        # Only consider instruction folders
-        if "inst" not in root_p.parts:
+        return []
+    if CPU_CONFIG:
+        resolved_root = GEN_DIR / "resolved_spec" / CPU_CONFIG
+        if resolved_root.exists():
+            return [resolved_root]
+        spec_root = GEN_DIR / "spec" / CPU_CONFIG
+        return [spec_root] if spec_root.exists() else []
+    return [GEN_DIR]
+
+
+def _iter_domain_yaml_paths(domain: str) -> list[Path]:
+    """Find YAML files for one generated-data domain."""
+    cache_key = f"{CPU_CONFIG or 'all'}:{domain}"
+    if cache_key in _PATH_CACHE:
+        return _PATH_CACHE[cache_key]
+
+    paths: list[Path] = []
+    for data_root in _active_data_roots():
+        domain_root = data_root / domain
+        if domain_root.exists():
+            walk_root = domain_root
+        elif not CPU_CONFIG:
+            walk_root = data_root
+        else:
             continue
-        for f in files:
-            if f.lower().endswith((".yaml", ".yml")):
-                p = root_p / f
-                # Must be under spec/*/inst or resolved_spec/*/inst
-                if any(part in {"spec", "resolved_spec"} for part in p.relative_to(GEN_DIR).parts):
-                    paths.append(p)
+        for root, _dirs, files in os.walk(walk_root):
+            root_p = Path(root)
+            if domain not in root_p.parts:
+                continue
+            for f in files:
+                if f.lower().endswith((".yaml", ".yml")):
+                    paths.append(root_p / f)
+    _PATH_CACHE[cache_key] = paths
     return paths
+
+
+def _iter_instruction_yaml_paths() -> list[Path]:
+    """Find instruction YAML files."""
+    return _iter_domain_yaml_paths("inst")
 
 
 def _iter_csr_yaml_paths() -> list[Path]:
-    """Find all CSR YAML files."""
-    paths: list[Path] = []
-    if not GEN_DIR.exists():
-        return paths
-    for root, _dirs, files in os.walk(GEN_DIR):
-        root_p = Path(root)
-        if "csr" not in root_p.parts:
-            continue
-        for f in files:
-            if f.lower().endswith((".yaml", ".yml")):
-                p = root_p / f
-                paths.append(p)
-    return paths
+    """Find CSR YAML files."""
+    return _iter_domain_yaml_paths("csr")
 
 
 def _iter_extension_yaml_paths() -> list[Path]:
-    """Find all extension YAML files."""
+    """Find extension YAML files."""
+    return _iter_domain_yaml_paths("ext")
+
+
+def _iter_mmr_yaml_paths() -> list[Path]:
+    """Find memory-mapped register YAML files."""
+    return _iter_domain_yaml_paths("mmr")
+
+
+def _iter_yaml_paths() -> list[Path]:
+    """Find YAML files under the active generated-data roots."""
+    cache_key = f"{CPU_CONFIG or 'all'}:*"
+    if cache_key in _PATH_CACHE:
+        return _PATH_CACHE[cache_key]
+
+    paths: list[Path] = []
+    for data_root in _active_data_roots():
+        for root, _dirs, files in os.walk(data_root):
+            root_p = Path(root)
+            for f in files:
+                if f.lower().endswith((".yaml", ".yml")):
+                    paths.append(root_p / f)
+    _PATH_CACHE[cache_key] = paths
+    return paths
+
+
+def _rel_to_repo(path: Path) -> str:
+    return str(path.relative_to(REPO_ROOT))
+
+
+def _active_config_status() -> dict[str, Any]:
+    roots = _active_data_roots()
+    status = {
+        "active_config": CPU_CONFIG or "all",
+        "repo_root": str(REPO_ROOT),
+        "gen_dir": str(GEN_DIR),
+        "data_roots": [str(root.relative_to(REPO_ROOT)) for root in roots],
+        "scoped": bool(CPU_CONFIG),
+    }
+    if CPU_CONFIG:
+        cfg_path = REPO_ROOT / "cfgs" / f"{CPU_CONFIG}.yaml"
+        if cfg_path.exists():
+            try:
+                cfg = _load_yaml(cfg_path)
+            except Exception:
+                cfg = {}
+            status["config_file"] = str(cfg_path.relative_to(REPO_ROOT))
+            status["config_description"] = cfg.get("description")
+            status["mandatory_extensions"] = cfg.get("mandatory_extensions", [])
+            status["implemented_extensions"] = cfg.get("implemented_extensions", [])
+            status["params"] = cfg.get("params", {})
+    return status
+
+
+def _domain_count(iterator) -> int:
+    return len(iterator())
+
+
+async def get_config(_args: dict[str, Any] | None = None):
+    """Return active UDB MCP configuration and data roots."""
+    return _active_config_status()
+
+
+async def server_stats(_args: dict[str, Any] | None = None):
+    """Return counts for active generated UDB domains."""
+    status = _active_config_status()
+    status["counts"] = {
+        "instructions": _domain_count(_iter_instruction_yaml_paths),
+        "csrs": _domain_count(_iter_csr_yaml_paths),
+        "extensions": _domain_count(_iter_extension_yaml_paths),
+        "mmrs": _domain_count(_iter_mmr_yaml_paths),
+    }
+    return status
+
+
+def _iter_extension_yaml_paths_old() -> list[Path]:
+    """Deprecated compatibility shim."""
     paths: list[Path] = []
     if not GEN_DIR.exists():
         return paths
@@ -339,19 +636,11 @@ def _iter_extension_yaml_paths() -> list[Path]:
 # ============================================================================
 
 
-async def list_gen_yaml():
+async def list_gen_yaml(_args: dict[str, Any] | None = None):
     """List all YAML files under gen/ as repo-relative paths."""
-    if not GEN_DIR.exists():
-        return {"files": []}
-    paths: list[str] = []
-    for root, _dirs, files in os.walk(GEN_DIR):
-        for f in files:
-            if f.lower().endswith((".yaml", ".yml")):
-                full = Path(root) / f
-                rel = str(full.relative_to(REPO_ROOT))
-                paths.append(rel)
+    paths = [_rel_to_repo(path) for path in _iter_yaml_paths()]
     paths.sort()
-    return {"count": len(paths), "files": paths}
+    return {"count": len(paths), "files": paths, "config": _active_config_status()}
 
 
 async def read_gen_yaml(args: dict[str, Any]):
@@ -474,9 +763,11 @@ async def search_instructions(args: dict[str, Any]):
                 continue
 
         defined_by = _extract_defined_by(data)
-        ext_from_path = _extension_in_path(
-            rel.relative_to(GEN_DIR).parts if rel.is_relative_to(GEN_DIR) else rel.parts
-        )
+        try:
+            gen_rel_parts = p.relative_to(GEN_DIR).parts
+        except ValueError:
+            gen_rel_parts = rel.parts
+        ext_from_path = _extension_in_path(gen_rel_parts)
 
         # Extension filter
         if ext_set:
@@ -535,6 +826,7 @@ async def search_instructions(args: dict[str, Any]):
             "field_specific": bool(field),
             "xlen_filter": list(xlen_set) if xlen_set else None,
         },
+        "config": _active_config_status(),
     }
 
 
@@ -692,6 +984,101 @@ async def search_csrs(args: dict[str, Any]):
             "field_specific": bool(field),
             "xlen_filter": list(xlen_set) if xlen_set else None,
         },
+        "config": _active_config_status(),
+    }
+
+
+# ============================================================================
+# Memory-Mapped Register Tools
+# ============================================================================
+
+
+async def search_mmrs(args: dict[str, Any]):
+    """
+    Search memory-mapped register YAMLs.
+
+    Args:
+        term: substring/regex to match in filename/path/name/description (optional)
+        extensions: extension names to filter by (optional)
+        use_regex: treat term as regex pattern (default False)
+        field: specific field to search in (e.g., "physical_address")
+        limit: max results (default 50)
+    """
+    term = args.get("term")
+    extensions = args.get("extensions") or []
+    use_regex = args.get("use_regex", False)
+    field = args.get("field")
+    limit = int(args.get("limit") or 50)
+
+    if term is not None and not isinstance(term, str):
+        raise ValueError("'term' must be a string if provided")
+    if not isinstance(extensions, list) or not all(isinstance(e, str) for e in extensions):
+        raise ValueError("'extensions' must be a list of strings")
+
+    ext_set = set(extensions)
+    regex_pattern = None
+    if use_regex and term:
+        try:
+            regex_pattern = re.compile(term, re.IGNORECASE)
+        except re.error as e:
+            raise ValueError(f"Invalid regex pattern: {e}")
+
+    results: list[dict[str, Any]] = []
+    count = 0
+    for p in _iter_mmr_yaml_paths():
+        rel = _rel_to_repo(p)
+        try:
+            data = _load_yaml(p)
+        except Exception:
+            continue
+        if data.get("kind") != "mmr":
+            continue
+
+        if field:
+            if term is None:
+                continue
+            if not _matches_field_search(data, field, term, use_regex):
+                continue
+        elif term:
+            name = data.get("name", "")
+            long_name = data.get("long_name", "")
+            desc = data.get("description", "")
+            search_text = f"{rel} {name} {long_name} {desc}".lower()
+            if regex_pattern:
+                matched = bool(regex_pattern.search(search_text))
+            else:
+                matched = term.lower() in search_text
+            if not matched:
+                continue
+
+        defined_by = _extract_defined_by(data)
+        if ext_set and set(defined_by).isdisjoint(ext_set):
+            continue
+
+        fields = data.get("fields", {})
+        field_names = list(fields.keys()) if isinstance(fields, dict) else []
+        results.append(
+            {
+                "path": rel,
+                "kind": data.get("kind"),
+                "name": data.get("name"),
+                "long_name": data.get("long_name"),
+                "description": data.get("description"),
+                "definedBy": defined_by,
+                "physical_address": data.get("physical_address"),
+                "length": data.get("length"),
+                "writable": data.get("writable"),
+                "fields": field_names[:16],
+            }
+        )
+        count += 1
+        if count >= limit:
+            break
+
+    return {
+        "count": count,
+        "results": results,
+        "config": _active_config_status(),
     }
 
 
@@ -1128,6 +1515,8 @@ async def find_function_usages(args: dict[str, Any]):
 
 
 async def main() -> None:
+    if Server is None or Tool is None or TextContent is None or stdio_server is None:
+        raise RuntimeError("The Python 'mcp' package is required to run the stdio MCP server.")
     server = Server("riscv-udb-mcp")
 
     @server.list_tools()
@@ -1154,6 +1543,22 @@ async def main() -> None:
                         }
                     },
                     "required": ["path"],
+                },
+            ),
+            Tool(
+                name="get_config",
+                description="Return the active RISCV_CPU_CONFIG and generated UDB data roots used by this MCP server",
+                inputSchema={
+                    "type": "object",
+                    "properties": {},
+                },
+            ),
+            Tool(
+                name="server_stats",
+                description="Return instruction, CSR, extension, and memory-mapped register counts for the active UDB config",
+                inputSchema={
+                    "type": "object",
+                    "properties": {},
                 },
             ),
             # ===== Instruction Tools =====
@@ -1302,6 +1707,128 @@ async def main() -> None:
                     },
                 },
             ),
+            # ===== Memory-Mapped Register Tools =====
+            Tool(
+                name="search_mmrs",
+                description="Search memory-mapped register YAMLs such as AIFoundry ESRs for FCC, FLB, and IPI",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "term": {
+                            "type": "string",
+                            "description": "substring/regex to match in filename/path/name/description",
+                        },
+                        "extensions": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "extension names to filter by",
+                        },
+                        "use_regex": {
+                            "type": "boolean",
+                            "default": False,
+                            "description": "treat term as regex pattern",
+                        },
+                        "field": {
+                            "type": "string",
+                            "description": "specific field to search, e.g. physical_address",
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 500,
+                            "default": 50,
+                        },
+                    },
+                },
+            ),
+            # ===== RDL Register-Map Tools =====
+            Tool(
+                name="get_rdl_status",
+                description="Check the SystemRDL register-map index status and object counts",
+                inputSchema={"type": "object", "properties": {}},
+            ),
+            Tool(
+                name="resolve_rdl_esr_address",
+                description="Resolve an absolute Erbium ESR address into privilege page, shire, subregion, register, and fields",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "address": {
+                            "type": "string",
+                            "description": "Absolute ESR address, decimal or hex",
+                        },
+                        "platform": {
+                            "type": "string",
+                            "description": "Optional platform, default erbium",
+                        },
+                    },
+                    "required": ["address"],
+                },
+            ),
+            Tool(
+                name="resolve_rdl_mmio_address",
+                description="Resolve an absolute MMIO address through a SystemRDL top-level memory map",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "address": {
+                            "type": "string",
+                            "description": "Absolute MMIO address, decimal or hex",
+                        },
+                        "top_map": {
+                            "type": "string",
+                            "description": "Optional top map key, default top_cpu_mm",
+                        },
+                    },
+                    "required": ["address"],
+                },
+            ),
+            Tool(
+                name="search_rdl_registers",
+                description="Search SystemRDL registers by name, path, type, or parent block",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "term": {"type": "string", "description": "Register search term"},
+                        "domain": {"type": "string", "description": "Optional domain filter"},
+                        "addrmap": {
+                            "type": "string",
+                            "description": "Optional parent addrmap filter",
+                        },
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 200, "default": 10},
+                    },
+                },
+            ),
+            Tool(
+                name="search_rdl_fields",
+                description="Search SystemRDL fields by name or parent register",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "term": {"type": "string", "description": "Field search term"},
+                        "domain": {"type": "string", "description": "Optional domain filter"},
+                        "register": {
+                            "type": "string",
+                            "description": "Optional parent register filter",
+                        },
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 200, "default": 10},
+                    },
+                },
+            ),
+            Tool(
+                name="get_rdl_register_details",
+                description="Get complete details for one SystemRDL register including fields",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "name_or_path": {
+                            "type": "string",
+                            "description": "Canonical register path or register name",
+                        },
+                    },
+                    "required": ["name_or_path"],
+                },
+            ),
             # ===== Multi-Domain Search =====
             Tool(
                 name="search_all",
@@ -1418,8 +1945,17 @@ async def main() -> None:
         handlers = {
             "list_gen_yaml": list_gen_yaml,
             "read_gen_yaml": read_gen_yaml,
+            "get_config": get_config,
+            "server_stats": server_stats,
             "search_instructions": search_instructions,
             "search_csrs": search_csrs,
+            "search_mmrs": search_mmrs,
+            "get_rdl_status": get_rdl_status,
+            "search_rdl_registers": search_rdl_registers,
+            "search_rdl_fields": search_rdl_fields,
+            "get_rdl_register_details": get_rdl_register_details,
+            "resolve_rdl_mmio_address": resolve_rdl_mmio_address,
+            "resolve_rdl_esr_address": resolve_rdl_esr_address,
             "search_extensions": search_extensions,
             "search_all": search_all,
             "search_functions": search_functions,
@@ -1432,10 +1968,11 @@ async def main() -> None:
             raise ValueError(f"Unknown tool: {name}")
 
         # Call handler (pass args only if function expects them)
-        if name == "list_gen_yaml":
-            result = await handler()
+        if name in {"list_gen_yaml", "get_config", "server_stats"}:
+            result = await handler(args)
         else:
             result = await handler(args)
+        result = _tag_result(name, result)
 
         # Return properly formatted MCP response
         return [TextContent(type="text", text=json.dumps(result, indent=2))]

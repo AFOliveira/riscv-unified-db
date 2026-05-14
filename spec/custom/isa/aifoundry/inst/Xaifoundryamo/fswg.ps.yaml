@@ -1,0 +1,43 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: fswg.ps
+long_name: Floating point store word global packed single
+description: |
+  32-bit vector store to global memory
+
+  Exceptions: Virtual address (rs1) must be aligned to a 256b boundary. Otherwise an access fault exception is
+  generated.
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryamo
+encoding:
+  match: 010100100000-----111-----0001011
+  variables:
+    - name: rs1
+      location: 19-15
+    - name: rs2
+      location: 11-7
+assembly: fs3, (rs1)
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  if ( m0.bit0 ) GLOBAL_MEM(rs1 + 0, 32) = fs3.e0 if
+  ( m0.bit1 ) GLOBAL_MEM(rs1 + 4, 32) = fs3.e1 if (
+  m0.bit2 ) GLOBAL_MEM(rs1 + 8, 32) = fs3.e2 if (
+  m0.bit3 ) GLOBAL_MEM(rs1 + 12, 32) = fs3.e3 if (
+  m0.bit4 ) GLOBAL_MEM(rs1 + 16, 32) = fs3.e4 if (
+  m0.bit5 ) GLOBAL_MEM(rs1 + 20, 32) = fs3.e5 if (
+  m0.bit6 ) GLOBAL_MEM(rs1 + 24, 32) = fs3.e6 if (
+  m0.bit7 ) GLOBAL_MEM(rs1 + 28, 32) = fs3.e7

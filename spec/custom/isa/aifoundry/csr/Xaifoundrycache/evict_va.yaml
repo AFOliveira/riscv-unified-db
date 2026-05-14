@@ -1,0 +1,59 @@
+$schema: csr_schema.json#
+kind: csr
+name: evict_va
+long_name: Evict Virtual Address Cache Operation
+address: 0x89f
+priv_mode: U
+length: 64
+writable: true
+description: |
+  Target CSR for `CSRRW xd, evict_va, xs`. A write translates VA to PA,
+  writes back as needed through DestLevel-1, and invalidates through
+  DestLevel-1. If NumLines is nonzero, x31 supplies the stride for
+  repeated operations. DestLevel=L1 is a NOP.
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrycache
+fields:
+  UseTensorMask:
+    location: 63
+    type: RW
+    reset_value: 0
+    description: Use tensor_mask to skip operation n when mask bit n is clear.
+  Reserved62_60:
+    location: 62-60
+    type: RW-R
+    reset_value: 0
+    description: Reserved, WARL(0).
+    sw_write(csr_value): return 0;
+  DestLevel:
+    location: 59-58
+    type: RW
+    reset_value: 0
+    description: "Destination level: 0=L1, 1=L2, 2=L3, 3=memory."
+  Reserved57_48:
+    location: 57-48
+    type: RW-R
+    reset_value: 0
+    description: Reserved, WARL(0).
+    sw_write(csr_value): return 0;
+  VA:
+    location: 47-6
+    type: RW
+    reset_value: 0
+    description: Virtual address bits 47:6.
+  Reserved5_4:
+    location: 5-4
+    type: RW-R
+    reset_value: 0
+    description: Reserved, WARL(0).
+    sw_write(csr_value): return 0;
+  NumLines:
+    location: 3-0
+    type: RW
+    reset_value: 0
+    description: Number of cache lines minus one.
+sw_read(): return 0;

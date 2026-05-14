@@ -1,0 +1,35 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: sbl
+long_name: Store bytes to local memory
+description: |
+  8-bit store to local memory.
+
+  Exceptions: None
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryamo
+encoding:
+  match: 0001000----------011000000111011
+  variables:
+    - name: rs2
+      location: 24-20
+    - name: rs1
+      location: 19-15
+assembly: rs2, (rs1)
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  LOCAL_MEM(rs1, 8) = rs2[7:0]

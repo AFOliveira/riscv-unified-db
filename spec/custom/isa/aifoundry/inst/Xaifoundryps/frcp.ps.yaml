@@ -6,14 +6,50 @@
 $schema: inst_schema.json#
 kind: instruction
 name: frcp.ps
-long_name: Packed single reciprocal
+long_name: Floating point reciprocal packed single
 description: |
-  Packed single reciprocal (1/x).
+  Computes an approximation within 1-ULP of the reciprocal of the single-precision values in fs1, performs rounding using RTZ, and writes the single-precision results to the vector register fd. The table below shows
+  the result for various classes of input:
+  fs1
+
+  fd
+
+  SNaN
+
+  QNaN
+
+  -
+
+  -0.0
+
+  +0.0
+
+  +
+
+  *
+
+  NaN
+
+  -0.0
+
+  -
+
+  +
+
+  +0.0
+
+  Where * means fd is set to default NaN and the Invalid operation floating-point exception flag is set. Also, any input
+  value less than -2126 is considered -, and any value greater than 2126 is considered +.
+  The mask register m0 is used to control execution. Inactive elements shall not generate exceptions and shall not
+  update the destination.
+  Subnormal inputs are treated as zeros, and set the input denormal exception flag. Subnormal outputs are flushed
+  to zero, and set the underflow and inexact exception flags.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 010110000111-----000-----1111011
   variables:
@@ -27,3 +63,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = f32_rcp(fs1.e<i>);
+  }

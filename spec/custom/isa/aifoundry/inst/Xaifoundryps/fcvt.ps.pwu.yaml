@@ -6,14 +6,18 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fcvt.ps.pwu
-long_name: Convert unsigned INT32 to FP32
+long_name: Floating point convert unsigned packed single packed word unsigned packed single
 description: |
-  Convert 8 unsigned INT32 to FP32.
+  Converts the unsigned 32-bit values in vector register fs1 to single-precision floating-point numbers,
+  using the rounding mode specified in the rm field, and writes the results to vector register fd.
+  The mask register m0 is used to control execution. Inactive elements shall not generate exceptions and shall not
+  update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 110100000001-------------1111011
   variables:
@@ -29,3 +33,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  fd.e<i> = ui32_to_f32(fs1.e<i>);
+  }

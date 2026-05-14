@@ -6,14 +6,17 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fcvt.ps.f16
-long_name: Up-convert FP16 to FP32
+long_name: Floating point 16 value up-convert packed single
 description: |
-  Up-convert 8 FP16 to FP32.
+  Up-convert the higher 16 bits of each 32b sub-element from float16 to float32. Input de-normals are
+  converted to 0.0 of the same sign, and set the InputDenorm flag. This instruction does not take a rounding-mode
+  argument. The result of this instruction is rounded using the rounding-mode specified in FRM.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 110100001010-----000-----1111011
   variables:
@@ -27,3 +30,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  fd.e<i> = ui32_to_f32(fs1.e<i>);
+  }

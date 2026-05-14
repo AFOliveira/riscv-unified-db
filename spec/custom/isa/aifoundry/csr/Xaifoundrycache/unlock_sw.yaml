@@ -1,0 +1,49 @@
+$schema: csr_schema.json#
+kind: csr
+name: unlock_sw
+long_name: Unlock Set/Way Cache Operation
+address: 0x7ff
+priv_mode: M
+length: 64
+writable: true
+description: |
+  Target CSR for `CSRRW xd, unlock_sw, xs`. A write unconditionally
+  unlocks the line at the selected L1 set and way, whether it was hard-
+  locked or soft-locked. Applying the operation to a non-locked line has
+  no effect. This CSR is machine-mode only.
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrycache
+fields:
+  Reserved63_57:
+    location: 63-57
+    type: RW-R
+    reset_value: 0
+    description: Reserved, WARL(0).
+    sw_write(csr_value): return 0;
+  Way:
+    location: 56-55
+    type: RW
+    reset_value: 0
+    description: L1 cache way.
+  Reserved54_10:
+    location: 54-10
+    type: RW-R
+    reset_value: 0
+    description: Reserved, WARL(0).
+    sw_write(csr_value): return 0;
+  Set:
+    location: 9-6
+    type: RW
+    reset_value: 0
+    description: L1 cache set. In C0 mode this selects the physical L1 set directly.
+  Reserved5_0:
+    location: 5-0
+    type: RW-R
+    reset_value: 0
+    description: Reserved, WARL(0).
+    sw_write(csr_value): return 0;
+sw_read(): return 0;

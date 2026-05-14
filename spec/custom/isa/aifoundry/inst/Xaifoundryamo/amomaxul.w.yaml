@@ -1,0 +1,40 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: amomaxul.w
+long_name: Atomic 32-bit unsigned integer maximum local
+description: |
+  Local atomic 32-bit unsigned maximum operation between the value in integer register 'rs2' and the
+  value in the memory address pointed by integer register 'rs1'. The original value in memory is returned in integer
+  register 'rd'.
+
+  Exceptions: Virtual address (rs1) must be aligned to a 4 byte boundary. Otherwise an access fault exception is
+  generated.
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryamo
+encoding:
+  match: 1110000----------010-----0111011
+  variables:
+    - name: rs2
+      location: 24-20
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: rd, rs2, (rs1)
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  rd = atomic_local_maxu(rs1, rs2, 32)

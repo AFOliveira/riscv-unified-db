@@ -6,14 +6,19 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fsgnjn.ps
-long_name: Packed single sign inject negate
+long_name: Floating point sign inject negate packed single
 description: |
-  Packed single sign inject negate.
+  Produces single-precision values combining bits from the two inputs, and writes the result to vector
+  register fd. The result's sign bits are the opposite of the sign bits of the single-precision values in vector register fs2,
+  while the rest of the bits are taken from the single-precision values in vector register fs1.
+  The mask register m0 is used to control execution. Inactive elements shall not update the destination.
+  This operation does not set any exception flags in FFLAGS.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 0010000----------001-----1111011
   variables:
@@ -29,3 +34,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = f32_copySignNot(fs1.e<i>, fs2.e<i>);
+  }

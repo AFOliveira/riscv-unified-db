@@ -6,14 +6,21 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fcvt.f16.ps
-long_name: Down-convert FP32 to FP16
+long_name: Floating point packed single down convert to FP 16-bit packed single
 description: |
-  Down-convert 8 FP32 to FP16.
+  Converts the single-precision values in vector register fs1 to half-precision floating-point numbers,
+  using the rounding mode specified in FRM, zero-extends the values to 32 bits, and writes the results to the 32-bit
+  elements of vector register fd.
+  The mask register m0 is used to control execution. Inactive elements shall not generate exceptions and shall not
+  update the destination.
+  Subnormal inputs are treated as zeros, and set the input denormal exception flag. Subnormal outputs are flushed
+  to zero, and set the underflow and inexact exception flags.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 110110001001-----000-----1111011
   variables:
@@ -27,3 +34,8 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  fd.h<2*i> = f32_to_f16(fs1.e<i>);
+  fd.h<2*i+1> = 0;
+  }

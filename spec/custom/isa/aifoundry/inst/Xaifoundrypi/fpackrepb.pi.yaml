@@ -6,15 +6,17 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fpackrepb.pi
-long_name: Pack and replicate byte
+long_name: Pack four bytes and replicate over the 256-bit register packed integer
 description: |
-  Pack and replicate byte values from the packed integer source register,
-  writing the result to the destination packed integer register.
+  Concatenates the lower 8 bits of each 32-bit element in vector register fs1, replicates the result four
+  times, and writes it to the vector register fd.
+  The mask register m0 is used to control execution. Inactive elements shall not update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundrypi
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrypi
 encoding:
   match: 001001100000-----000-----1111011
   variables:
@@ -28,3 +30,11 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  k = i % (VLEN/128);
+  if (m0.bit<i>) fd.e<i> = fs1.h<16*k>
+  | (fs1.h<16*k+4> << 8)
+  | (fs1.h<16*k+8> << 16)
+  | (fs1.h<16*k+12> << 24);
+  }

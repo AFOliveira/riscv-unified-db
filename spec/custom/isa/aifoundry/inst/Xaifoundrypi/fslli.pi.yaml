@@ -6,16 +6,17 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fslli.pi
-long_name: Packed integer shift left logical immediate
+long_name: Packed integer shift left logical with immediate
 description: |
-  Perform element-wise logical left shift across all 8 INT32 lanes of the
-  packed integer source register by the immediate shift amount, writing the
-  result to the destination packed integer register.
+  Shifts the 32-bit values in vector register fs1 left (shifting in zeros into the lower bits) by the shift
+  amount specified in the 5-bit unsigned immediate operand, and writes the 32-bit results to the vector register fd.
+  The mask register m0 is used to control execution. Inactive elements shall not update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundrypi
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrypi
 encoding:
   match: 0100111----------001-----1111011
   variables:
@@ -25,9 +26,13 @@ encoding:
       location: 19-15
     - name: rd
       location: 11-7
-assembly: fd, fs1, shamt
+assembly: fd, fs1, imm5
 access:
   s: always
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = fs1.e<i> << imm5;
+  }

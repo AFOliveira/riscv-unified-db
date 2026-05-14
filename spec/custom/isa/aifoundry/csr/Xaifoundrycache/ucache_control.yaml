@@ -1,0 +1,69 @@
+$schema: csr_schema.json#
+kind: csr
+name: ucache_control
+long_name: User Cache Control
+address: 0x810
+priv_mode: U
+length: 64
+writable: true
+description: |
+  User-level cache-control CSR. The low two bits are a restricted alias of
+  mcache_control: D1Split is a read-only shadow, and ScpEnable can be
+  changed only by ET-Minion thread 0 when D1Split is 1. Both hardware
+  threads may write the CacheOp control fields.
+
+  The CacheOp control fields throttle EvictVA, FlushVA, PrefetchVA, and
+  TensorLoadL2Scp operations.
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrycache
+fields:
+  Reserved63_11:
+    location: 63-11
+    type: RO
+    reset_value: 0
+    description: Reserved. Writes are ignored and reads return zero.
+  CacheOpMax:
+    location: 10-6
+    type: RW
+    reset_value: 0
+    description: |
+      Maximum outstanding CacheOp requests issued from a given ET-Minion.
+      0 means no limit; values 1 through 31 encode that many outstanding
+      requests into L2/L3.
+  Reserved5:
+    location: 5
+    type: RO
+    reset_value: 0
+    description: Reserved. Writes are ignored and reads return zero.
+  RepRate:
+    location: 4-2
+    type: RW
+    reset_value: 0
+    description: |
+      CacheOp repeat rate. This field encodes log2 of the number of cycles
+      inserted between requests: 0 means no delay, 1 means 2 cycles, and
+      7 means 128 cycles.
+  SCPENABLE:
+    alias: mcache_control.SCPENABLE
+    location: 1
+    type: RW-RH
+    reset_value: 0
+    description: |
+      Shadow of mcache_control.ScpEnable. Writes are ignored when D1Split
+      is 0 or when executed from ET-Minion thread 1.
+    sw_write(csr_value): |
+      if ((hartid()[0] == 1'b0) && (CSR[mcache_control].D1SPLIT == 1'b1)) {
+        return csr_value.SCPENABLE;
+      } else {
+        return CSR[mcache_control].SCPENABLE;
+      }
+  D1SPLIT:
+    alias: mcache_control.D1SPLIT
+    location: 0
+    type: RO-H
+    reset_value: 0
+    description: Read-only shadow of mcache_control.D1Split.

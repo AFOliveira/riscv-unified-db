@@ -6,14 +6,16 @@
 $schema: inst_schema.json#
 kind: instruction
 name: flq2
-long_name: Load 256-bit unmasked
+long_name: Floating point load unmasked 256-bits
 description: |
-  Load 256 bits (full packed-single register) from memory at address rs1+imm.
+  Loads 256 consecutive bits from memory and stores them in the destination register fd. The effective
+  address of the load is calculated by adding a signed immediate offset to the value in register rs1.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: -----------------101-----0000111
   variables:
@@ -23,9 +25,11 @@ encoding:
       location: 19-15
     - name: rd
       location: 11-7
-assembly: fd, imm(xs1)
+assembly: fd, offset(rs1)
 access:
   s: always
   u: always
   vs: always
   vu: always
+operation(): |
+  fd = MEM(rs1 + sext(offset, 64), 256)

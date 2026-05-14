@@ -1,0 +1,43 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: flwl.ps
+long_name: Packed load from local memory
+description: |
+  32-bit vector load from local memory.
+
+  Exceptions: Virtual address (rs1) must be aligned to a 256b boundary. Otherwise an access fault exception is
+  generated.
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryamo
+encoding:
+  match: 000100000000-----111-----0001011
+  variables:
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: fd, (rs1)
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  if ( m0.bit0 ) fd.e0 = LOCAL_MEM(rs1 + 0, 32) if
+  ( m0.bit1 ) fd.e1 = LOCAL_MEM(rs1 + 4, 32) if (
+  m0.bit2 ) fd.e2 = LOCAL_MEM(rs1 + 8, 32) if (
+  m0.bit3 ) fd.e3 = LOCAL_MEM(rs1 + 12, 32) if (
+  m0.bit4 ) fd.e4 = LOCAL_MEM(rs1 + 16, 32) if (
+  m0.bit5 ) fd.e5 = LOCAL_MEM(rs1 + 20, 32) if (
+  m0.bit6 ) fd.e6 = LOCAL_MEM(rs1 + 24, 32) if (
+  m0.bit7 ) fd.e7 = LOCAL_MEM(rs1 + 28, 32)

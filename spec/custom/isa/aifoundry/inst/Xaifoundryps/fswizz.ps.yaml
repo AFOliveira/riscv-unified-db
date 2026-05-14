@@ -6,14 +6,16 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fswizz.ps
-long_name: Element swizzle/permute within PS register
+long_name: Floating point swizzle operation packed single
 description: |
-  Element swizzle/permute within PS register.
+  For each group of 128 bits, extracts four 32-bit elements from the vector register fs1 and inserts them
+  in the corresponding group of 128 bits in the vector register fd, at the locations specified in the immediate operand.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 1110011------------------1111011
   variables:
@@ -25,9 +27,16 @@ encoding:
       location: 14-12
     - name: rd
       location: 11-7
-assembly: xd, fs1, imm
+assembly: rd, fs1, imm
 access:
   s: always
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/128; i++) {
+  if (m0.bit<4*i+0>) fd.e<4*i+0> = fs1.e<4*i + imm[1:0]>;
+  if (m0.bit<4*i+1>) fd.e<4*i+1> = fs1.e<4*i + imm[3:2]>;
+  if (m0.bit<4*i+2>) fd.e<4*i+2> = fs1.e<4*i + imm[5:4]>;
+  if (m0.bit<4*i+3>) fd.e<4*i+3> = fs1.e<4*i + imm[7:6]>;
+  }

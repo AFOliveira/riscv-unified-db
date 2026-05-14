@@ -1,0 +1,48 @@
+$schema: csr_schema.json#
+kind: csr
+name: lock_sw
+long_name: Lock Set/Way Cache Operation
+address: 0x7fd
+priv_mode: M
+length: 64
+writable: true
+description: |
+  Target CSR for `CSRRW xd, lock_sw, xs`. A write zeroes and hard-locks
+  the line at physical address {PA, 6'b0} into the L1 cache way selected
+  by xs[56:55]. This CSR is machine-mode only.
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrycache
+fields:
+  Reserved63_57:
+    location: 63-57
+    type: RW-R
+    reset_value: 0
+    description: Reserved, WARL(0).
+    sw_write(csr_value): return 0;
+  Way:
+    location: 56-55
+    type: RW
+    reset_value: 0
+    description: L1 cache way.
+  Reserved54_40:
+    location: 54-40
+    type: RW-R
+    reset_value: 0
+    description: Reserved, WARL(0).
+    sw_write(csr_value): return 0;
+  PA:
+    location: 39-6
+    type: RW
+    reset_value: 0
+    description: Physical address bits 39:6; low six bits are zero.
+  Reserved5_0:
+    location: 5-0
+    type: RW-R
+    reset_value: 0
+    description: Reserved, WARL(0).
+    sw_write(csr_value): return 0;
+sw_read(): return 0;

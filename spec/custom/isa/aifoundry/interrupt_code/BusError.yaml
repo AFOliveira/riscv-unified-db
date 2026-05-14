@@ -1,0 +1,13 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../schemas/interrupt_code_schema.json
+
+$schema: interrupt_code_schema.json#
+kind: interrupt_code
+name: BusError
+num: 23
+display_name: Bus error
+definedBy:
+  extension:
+    name: Xaifoundry

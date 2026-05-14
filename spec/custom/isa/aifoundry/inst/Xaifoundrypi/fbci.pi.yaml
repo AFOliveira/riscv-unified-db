@@ -6,15 +6,15 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fbci.pi
-long_name: Broadcast immediate to packed integer lanes
+long_name: Packed integer broadcast of 20-bit immediate to floating point register
 description: |
-  Broadcast a 20-bit immediate value to all 8 INT32 lanes of the destination
-  packed integer register.
+  Sign-extends the 20-bit immediate in the instruction to 32 bits and broadcasts this value into each 32bit element in the destination register fd.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundrypi
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrypi
 encoding:
   match: -------------------------1011111
   variables:
@@ -22,9 +22,14 @@ encoding:
       location: 31-12
     - name: rd
       location: 11-7
-assembly: fd, imm
+assembly: fd, imm20
 access:
   s: always
   u: always
   vs: always
   vu: always
+operation(): |
+  tmp = sext(imm20, 32);
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = tmp;
+  }

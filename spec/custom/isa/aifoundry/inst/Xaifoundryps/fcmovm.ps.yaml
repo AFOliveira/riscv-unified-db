@@ -6,14 +6,15 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fcmovm.ps
-long_name: Packed single conditional move using mask
+long_name: Floating point conditional move mask packed single
 description: |
-  Packed single conditional move using mask. Similar to FCMOV.PS but condition comes from a mask register.
+  For all mask register m0 bits, when a bit is zero select the corresponding 32-bit value in vector register fs2 else select the corresponding value in vector register fs1, and write the result to the vector register fd.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 0000000----------000-----1110111
   variables:
@@ -29,3 +30,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++ ) {
+  fd.e<i> = m0.bit<i> ? fs1.e<i> : fs2.e<i>
+  }

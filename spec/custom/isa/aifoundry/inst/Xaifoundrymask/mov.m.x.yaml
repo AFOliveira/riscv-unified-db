@@ -1,0 +1,40 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: mov.m.x
+long_name: Move eight least significant bits from register X to register M
+description: |
+  MOV.M.X moves data from the bottom 8 bits of a single X register specified by the rs1 field in bits
+  19:15 of the instruction. This value is logically ORed with an 8-bit immediate in bits 24:20 and 14:12 in the instruction. The result is then written to a single M register specified by mask register md.
+
+  Exceptions: None
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrymask
+encoding:
+  match: 0101011-------------00---1111011
+  variables:
+    - name: imm_hi
+      location: 24-20
+    - name: rs1
+      location: 19-15
+    - name: imm_lo
+      location: 14-12
+    - name: md
+      location: 9-7
+assembly: md, rs1, imm8
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  md = rs1[7:0] | imm8

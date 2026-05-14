@@ -1,0 +1,35 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: mova.x.m
+long_name: Move eight least significant bits from all X registers to register M
+description: |
+  The MOVA.X.M instruction simultaneously moves data from all eight 8-bit M registers (m7:m0) into a
+  single 64-bit X register. It collects all eight 8 bit M registers, concatenates them together into a single 64 bit quantity, and stores the result into the X register specified by the rd field in bits 11:7 of the instruction, with register m7 in
+  bits 63:56, and m0 in bits 7:0 of the X register.
+
+  Exceptions: None
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrymask
+encoding:
+  match: 11010110000000000000-----1111011
+  variables:
+    - name: rd
+      location: 11-7
+assembly: rd
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  rd = (m7 << 56) | (m6 << 48) | (m5 << 40) | (m4 << 32) | (m3 << 24) | (m2 << 16) | (m1 << 8) | m0

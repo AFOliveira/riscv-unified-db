@@ -1,0 +1,36 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: masknot
+long_name: Logical NOT (invert bits) in source mask register.
+description: |
+  This instruction takes the contents of mask register ms1, inverts each bit (changing 0 to 1 or 1 to 0,
+  and stores the result stores into a destination mask register md.
+
+  Exceptions: None
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrymask
+encoding:
+  match: 01100110000000---01000---1111011
+  variables:
+    - name: ms1
+      location: 17-15
+    - name: md
+      location: 9-7
+assembly: md, ms1
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  md = ! ms1

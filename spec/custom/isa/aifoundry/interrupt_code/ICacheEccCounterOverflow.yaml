@@ -1,0 +1,13 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../schemas/interrupt_code_schema.json
+
+$schema: interrupt_code_schema.json#
+kind: interrupt_code
+name: ICacheEccCounterOverflow
+num: 19
+display_name: I-cache ECC counter overflow
+definedBy:
+  extension:
+    name: Xaifoundry

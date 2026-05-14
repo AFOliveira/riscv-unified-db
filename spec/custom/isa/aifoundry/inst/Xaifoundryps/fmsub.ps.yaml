@@ -6,14 +6,23 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fmsub.ps
-long_name: Packed single fused multiply-subtract
+long_name: Floating point multiply subtract packed single
 description: |
-  Packed single fused multiply-subtract: fd[i] = fs1[i]*fs2[i] - fs3[i].
+  Multiplies the single-precision values in vector register fs1 by the single-precision values in vector
+  register fs2, subtracts the single-precision values in vector register fs3, performs rounding using the rounding mode
+  specified in the rm field, and writes the single-precision results to vector register fd.
+  The mask register m0 is used to control execution. Inactive elements shall not generate exceptions and shall not
+  update the destination.
+  When the multiplicands are infinity and zero, the operation must set the invalid operation exception flag, even when
+  the addend is a quiet NaN.
+  Subnormal inputs are treated as zeros, and set the input denormal exception flag. Subnormal outputs are flushed
+  to zero, and set the underflow and inexact exception flags.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: -----01------------------1011011
   variables:
@@ -33,3 +42,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = f32_mulAdd(fs1.e<i>, fs2.e<i>, -fs3.e<i>);
+  }

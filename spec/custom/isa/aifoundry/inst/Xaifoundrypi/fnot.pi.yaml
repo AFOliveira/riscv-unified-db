@@ -6,15 +6,16 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fnot.pi
-long_name: Packed integer NOT
+long_name: Packed integer NOT operation
 description: |
-  Perform bitwise NOT of each 32-bit lane in the packed integer source
-  register, writing the result to the destination packed integer register.
+  Inverts the bits of the 32-bit values in vector register fs1, and writes the result to vector register fd.
+  The mask register m0 is used to control execution. Inactive elements shall not update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundrypi
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrypi
 encoding:
   match: 000001100000-----010-----1111011
   variables:
@@ -28,3 +29,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = ~fs1.e<i>;
+  }

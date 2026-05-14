@@ -1,0 +1,39 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: amoswapg.d
+long_name: Atomic swap global doubleword
+description: |
+  Global atomic 64-bit swap operation between the value in integer register 'rs2' and the value in the
+  memory address pointed by integer register 'rs1'.
+
+  Exceptions: Virtual address (rs1) must be aligned to an 8 byte boundary. Otherwise an access fault exception is
+  generated.
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryamo
+encoding:
+  match: 0000101----------011-----0111011
+  variables:
+    - name: rs2
+      location: 24-20
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: rd, rs2, (rs1)
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  rd = atomic_global_swap(rs1, rs2, 64)

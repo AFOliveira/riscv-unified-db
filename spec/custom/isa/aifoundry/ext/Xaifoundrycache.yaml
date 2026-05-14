@@ -1,0 +1,43 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../schemas/ext_schema.json
+
+$schema: ext_schema.json#
+kind: extension
+name: Xaifoundrycache
+type: unprivileged
+long_name: AI Foundry Cache Control extension
+company:
+  name: AI Foundry
+  url: https://github.com/aifoundry-org
+versions:
+- version: "1.0.0"
+  state: development
+  ratification_date: null
+  contributors:
+  - name: Gianluca Guida
+    company: AI Foundry
+description: |
+  The Cache Control extension provides CSRs for managing the ET-Minion's
+  data cache hierarchy. ET-man cache-control pseudo-instructions are encoded
+  as writes to these CSRs, for example `csrw evict_sw, rs` or
+  `csrrw rd, evict_va, rs`; they are not standalone instruction encodings.
+
+  Each ET-Minion core has a 4 KB L1 data cache (16-set, 4-way, 64-byte lines) that can
+  be configured as:
+
+  * Shared mode (C0): dynamically shared between the two hardware threads
+  * Split mode (C1): hart 0 uses sets 0-7, hart 1 uses sets 14-15, and sets 8-13 are unavailable
+  * Scratchpad mode (C2): hart 0 uses sets 12-13, hart 1 uses sets 14-15, and sets 0-11 are scratchpad
+
+  Cache configuration is controlled via the `mcache_control` (M-mode) and `ucache_control`
+  (U-mode, restricted view) CSRs.
+
+  Cache control operations are encoded as CSR writes to:
+
+  * `evict_sw`, `flush_sw`, `lock_sw`, and `unlock_sw` in M-mode
+  * `prefetch_va`, `evict_va`, `flush_va`, `lock_va`, and `unlock_va` in U-mode
+
+  The evict/flush/prefetch operations can target L1, L2, L3, or memory
+  levels as defined by each CSR field map.

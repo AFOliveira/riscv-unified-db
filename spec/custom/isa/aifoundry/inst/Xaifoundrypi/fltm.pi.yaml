@@ -6,16 +6,17 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fltm.pi
-long_name: Packed integer less-than to mask
+long_name: Packed integer less than mask
 description: |
-  Perform element-wise signed less-than comparison across all 8 INT32 lanes
-  of the packed integer source registers, writing the result to a mask
-  destination register with one bit per lane.
+  Writes the value 1 to each mask register md bit if the corresponding 32-bit signed integer value in
+  vector register fs1 is less than the 32-bit signed integer value in vector register fs2, otherwise writes the value 0.
+  The mask register m0 is used to control execution. Inactive elements shall not update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundrypi
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrypi
 encoding:
   match: 0011111----------00000---1111011
   variables:
@@ -31,3 +32,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) md.bit<i> = (fs1.e<i> < fs2.e<i>) ? 1 : 0;
+  }

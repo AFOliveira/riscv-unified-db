@@ -6,14 +6,18 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fcmov.ps
-long_name: Packed single conditional move
+long_name: Floating point conditional move packed single
 description: |
-  Packed single conditional move. For each lane, if fs3 element is non-zero, write fs1 element to fd; otherwise write fs2 element.
+  For all 32-bit values in vector register fs1, when a value is zero select the corresponding 32-bit value
+  in vector register fs3 else select the corresponding value in vector register fs2, and write the result to the vector
+  register fd.
+  The mask register m0 is used to control execution. Inactive elements shall not update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: -----10----------010-----0111111
   variables:
@@ -31,3 +35,8 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++ )
+  {
+  if ( m0.bit<i> ) fd.e<i> = fs1.e<i> != 0 ? fs2.e<i> : fs3.e<i>
+  }

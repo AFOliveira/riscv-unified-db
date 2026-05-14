@@ -6,14 +6,18 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fg32h.ps
-long_name: Gather halfwords from 32-byte aligned block
+long_name: Restricted 16-bit gather from 32-byte area packed single
 description: |
-  Gather halfwords from a 32-byte aligned block.
+  Loads 256 bits from a 32-byte aligned memory location, and writes the n-th 32-bit element of the destination register fd with the m-th 16-bit value of the data as specified by bits 4n+3:4n of rs1, sign-extended to 32
+  bits. The effective address of the load is taken by bits 63:5 of rs2.
+  The mask register m0 is used to control execution. Inactive elements shall not generate exceptions and shall not
+  update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 0001000----------001-----0001011
   variables:
@@ -23,9 +27,17 @@ encoding:
       location: 19-15
     - name: rd
       location: 11-7
-assembly: fd, xs1(xs2)
+assembly: fd, rs1(rs2)
 access:
   s: always
   u: always
   vs: always
   vu: always
+operation(): |
+  if (m0 != 0) {
+  tmp = MEM(rs2[63:5] << 5, VLEN);
+  for (i = 0; i < VLEN/32; i++) {
+  m = (rs2[4:1] + rs1[4*n+3:4*n]) % 16;
+  if (m0.bit<i>) fd.e<i> = sext(tmp[16*m+15:16*m], 32);
+  }
+  }

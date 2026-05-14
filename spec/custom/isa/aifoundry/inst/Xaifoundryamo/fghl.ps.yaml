@@ -1,0 +1,45 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: fghl.ps
+long_name: Gather 16-bit words from local memory
+description: |
+  16-bit vector gather from local memory.
+
+  Exceptions: Each of the gather virtual addresses must be aligned to a 16b boundary. Otherwise an access fault
+  exception is generated.
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryamo
+encoding:
+  match: 1000100----------111-----0001011
+  variables:
+    - name: rs2
+      location: 24-20
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: fd, fs1(rs2)
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  if ( m0.bit0 ) fd.e0 = SEXT(LOCAL_MEM(rs2 + fs1.e0, 16), 32)
+  if ( m0.bit1 ) fd.e1 = SEXT(LOCAL_MEM(rs2 + fs1.e1, 16), 32)
+  if ( m0.bit2 ) fd.e2 = SEXT(LOCAL_MEM(rs2 + fs1.e2, 16), 32)
+  if ( m0.bit3 ) fd.e3 = SEXT(LOCAL_MEM(rs2 + fs1.e3, 16), 32)
+  if ( m0.bit4 ) fd.e4 = SEXT(LOCAL_MEM(rs2 + fs1.e4, 16), 32)
+  if ( m0.bit5 ) fd.e5 = SEXT(LOCAL_MEM(rs2 + fs1.e5, 16), 32)
+  if ( m0.bit6 ) fd.e6 = SEXT(LOCAL_MEM(rs2 + fs1.e6, 16), 32)
+  if ( m0.bit7 ) fd.e7 = SEXT(LOCAL_MEM(rs2 + fs1.e7, 16), 32)

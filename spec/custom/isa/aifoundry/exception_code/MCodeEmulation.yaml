@@ -1,0 +1,13 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../schemas/exception_code_schema.json
+
+$schema: exception_code_schema.json#
+kind: exception_code
+name: MCodeEmulation
+num: 30
+display_name: M-code emulation
+definedBy:
+  extension:
+    name: Xaifoundry

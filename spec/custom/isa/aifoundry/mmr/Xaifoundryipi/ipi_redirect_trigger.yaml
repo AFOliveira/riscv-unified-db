@@ -1,0 +1,20 @@
+$schema: mmr_schema.json#
+kind: mmr
+name: ipi_redirect_trigger
+long_name: Inter-Processor Interrupt Redirect Trigger
+description: |
+  Memory-mapped register for IPI redirect trigger. Writing a 1 to a bit
+  triggers a redirected IPI to the corresponding hart.
+definedBy:
+  extension:
+    name: Xaifoundryipi
+physical_address: 0x1c0340080
+length: 64
+writable: true
+fields:
+  IPI_REDIRECT_TRIGGER:
+    location: 15-0
+    type: RW
+    reset_value: 0
+    description: |
+      IPI redirect trigger bitmask.

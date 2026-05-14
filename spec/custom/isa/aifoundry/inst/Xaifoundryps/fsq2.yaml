@@ -6,14 +6,16 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fsq2
-long_name: Store 256-bit unmasked
+long_name: Floating point store unmasked 256-bits
 description: |
-  Store 256 bits (full packed-single register) to memory.
+  Stores the data in source register fd into 256 consecutive bits in memory. The effective address of the
+  store is calculated by adding a signed immediate offset to the value in register rs1.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: -----------------101-----0100111
   variables:
@@ -23,9 +25,11 @@ encoding:
       location: 24-20
     - name: rs1
       location: 19-15
-assembly: fs2, imm(xs1)
+assembly: fs2, offset(rs1)
 access:
   s: always
   u: always
   vs: always
   vu: always
+operation(): |
+  MEM(rs1 + sext(offset,64), 256) = fs2[*];

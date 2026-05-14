@@ -1,0 +1,47 @@
+$schema: csr_schema.json#
+kind: csr
+name: unlock_va
+long_name: Unlock Virtual Address Cache Operation
+address: 0x8ff
+priv_mode: U
+length: 64
+writable: true
+description: |
+  Target CSR for `CSRRW xd, unlock_va, xs`. A write translates VA to PA
+  and removes the soft-lock if the matching line is present in L1 and is
+  soft-locked. Otherwise, the operation has no effect.
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrycache
+fields:
+  UseTensorMask:
+    location: 63
+    type: RW
+    reset_value: 0
+    description: Use tensor_mask to skip operation n when mask bit n is clear.
+  Reserved62_48:
+    location: 62-48
+    type: RW-R
+    reset_value: 0
+    description: Reserved, WARL(0).
+    sw_write(csr_value): return 0;
+  VA:
+    location: 47-6
+    type: RW
+    reset_value: 0
+    description: Virtual address bits 47:6.
+  Reserved5_4:
+    location: 5-4
+    type: RW-R
+    reset_value: 0
+    description: Reserved, WARL(0).
+    sw_write(csr_value): return 0;
+  NumLines:
+    location: 3-0
+    type: RW
+    reset_value: 0
+    description: Number of cache lines minus one; x31 supplies the stride for repeated operations.
+sw_read(): return 0;

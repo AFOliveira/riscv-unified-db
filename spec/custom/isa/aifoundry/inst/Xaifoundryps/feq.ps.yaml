@@ -6,14 +6,21 @@
 $schema: inst_schema.json#
 kind: instruction
 name: feq.ps
-long_name: Packed single compare equal
+long_name: Floating point equal to compare packed single
 description: |
-  Packed single compare equal. Result is all-1s/all-0s per element in packed register.
+  Writes all 1s to each 32-bit element in register fd if the corresponding single-precision value in vector
+  register fs1 is equal to the single-precision value in vector register fs2, otherwise writes the value 0.
+  The mask register m0 is used to control execution. Inactive elements shall not generate exceptions and shall not
+  update the destination.
+  For the purposes of this instruction, the value -0 is considered to be equal to the value +0. Signaling NaN inputs set
+  the invalid operation exception flag. If any input is a NaN the result is 0.
+  Subnormal inputs are treated as zeros, and set the input denormal exception flag.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 1010000----------010-----1111011
   variables:
@@ -29,3 +36,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = f32_eq(fs1.e<i>, fs2.e<i>) ? 0xFFFFFFFF : 0;
+  }

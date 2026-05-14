@@ -1,0 +1,37 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: maskpopcz
+long_name: Count the number of 0's in the source mask register
+description: |
+  This operation counts the number of 0's in the source mask register ms1 and stores this information
+  to the integer destination mask register rd. Typically an operation would be performed on these bits that tests each
+  element of a packed register, and the number of 0's would indicate the number of elements that failed the test.
+
+  Exceptions: None
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrymask
+encoding:
+  match: 01010100000000---000-----1111011
+  variables:
+    - name: ms1
+      location: 17-15
+    - name: rd
+      location: 11-7
+assembly: rd, ms1
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  rd = count_zeroes(ms1)

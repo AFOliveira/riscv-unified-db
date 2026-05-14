@@ -6,14 +6,17 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fbcx.ps
-long_name: Broadcast extend
+long_name: Floating point broadcast packed single
 description: |
-  Broadcast the 32-bit value in integer register rs1 to all 8 elements of the destination PS register.
+  Broadcasts the lower 32 bits of the integer register rs1 to one or more of the eight 32-bit elements of
+  the destination register fd, as indicated by the mask. A mask value of 0 is a legal value and will result in no data
+  movement.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 000000000000-----011-----0001011
   variables:
@@ -21,9 +24,14 @@ encoding:
       location: 19-15
     - name: rd
       location: 11-7
-assembly: fd, xs1
+assembly: fd, rs1
 access:
   s: always
   u: always
   vs: always
   vu: always
+operation(): |
+  tmp = rs1[31:0];
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = tmp;
+  }

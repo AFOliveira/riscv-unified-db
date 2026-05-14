@@ -1,0 +1,36 @@
+$schema: csr_schema.json#
+kind: csr
+name: tensor_coop
+long_name: Tensor Cooperative Load Control
+address: 0x804
+priv_mode: U
+length: 64
+writable: true
+description: |
+  Controls cooperative tensor load operations. When enabled, multiple minions'
+  tensor load requests to the same memory location are coalesced into a single
+  request for better performance and power.
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrytensor
+fields:
+  COOPNEIGHMASK:
+    location: 0
+    type: RW
+    reset_value: 0
+    description: Coopneighmask is a bit mask, where the n-th bit corresponds to the n-th neighborhood
+      in a shire.
+  COOPMINMASK:
+    location: 1
+    type: RW
+    reset_value: 0
+    description: Coopminmask is a bit mask, where the n-th bit corresponds to the n-th Minion in a neighborhood.
+  COOPID:
+    location: 2
+    type: RW
+    reset_value: 0
+    description: Coopid is an integer, in the range 0-15, used by hardware to coordinate simultaneous
+      cooperative loads across multiple minions and neighborhoods.

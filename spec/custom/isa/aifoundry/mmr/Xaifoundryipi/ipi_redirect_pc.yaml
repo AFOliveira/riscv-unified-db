@@ -1,0 +1,21 @@
+$schema: mmr_schema.json#
+kind: mmr
+name: ipi_redirect_pc
+long_name: IPI Redirect PC
+description: |
+  Target virtual program counter for redirect IPI operations. User-level
+  software writes the 48 least significant bits of a target virtual PC
+  of a redirect IPI for all the harts in a given neighborhood.
+definedBy:
+  extension:
+    name: Xaifoundryipi
+physical_address: 0x1c0100040
+length: 64
+writable: true
+fields:
+  PC:
+    location: 47-0
+    description: |
+      Target virtual program counter for redirect IPI.
+    type: RW
+    reset_value: 0

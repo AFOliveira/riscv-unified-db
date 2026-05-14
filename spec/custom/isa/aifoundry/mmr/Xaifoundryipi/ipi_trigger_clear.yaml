@@ -1,0 +1,20 @@
+$schema: mmr_schema.json#
+kind: mmr
+name: ipi_trigger_clear
+long_name: Inter-Processor Interrupt Trigger Clear
+description: |
+  Memory-mapped register used to clear pending inter-processor interrupts.
+  Writing a 1 to a bit clears the corresponding IPI.
+definedBy:
+  extension:
+    name: Xaifoundryipi
+physical_address: 0x1c0f40098
+length: 64
+writable: true
+fields:
+  IPI_TRIGGER_CLEAR:
+    location: 15-0
+    type: RW
+    reset_value: 0
+    description: |
+      Write 1 to clear corresponding IPI.

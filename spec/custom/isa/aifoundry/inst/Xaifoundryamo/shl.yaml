@@ -1,0 +1,36 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: shl
+long_name: Store 16-bit word to local memory
+description: |
+  16-bit store to local memory.
+
+  Exceptions: The virtual addresses defined in rs1 must be aligned to a 16b boundary. Otherwise an access fault
+  exception is generated.
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryamo
+encoding:
+  match: 0001100----------011000000111011
+  variables:
+    - name: rs2
+      location: 24-20
+    - name: rs1
+      location: 19-15
+assembly: rs2, (rs1)
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  LOCAL_MEM(rs1, 16) = rs2[15:0]

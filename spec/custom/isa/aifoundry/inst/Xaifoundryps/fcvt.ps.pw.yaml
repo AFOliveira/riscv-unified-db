@@ -6,14 +6,18 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fcvt.ps.pw
-long_name: Convert signed INT32 to FP32
+long_name: Floating point signed packed single packed word packed single
 description: |
-  Convert 8 signed INT32 to FP32.
+  Converts the signed 32-bit values in vector register fs1 to single-precision floating-point numbers,
+  using the rounding mode specified in the rm field, and writes the results to vector register fd.
+  The mask register m0 is used to control execution. Inactive elements shall not generate exceptions and shall not
+  update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 110100000000-------------1111011
   variables:
@@ -29,3 +33,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  fd.e<i> = i32_to_f32(fs1.e<i>);
+  }

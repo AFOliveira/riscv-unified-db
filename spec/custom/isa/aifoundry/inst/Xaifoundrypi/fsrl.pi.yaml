@@ -8,16 +8,18 @@ kind: instruction
 name: fsrl.pi
 long_name: Packed integer shift right logical
 description: |
-  Perform element-wise logical right shift across all 8 INT32 lanes of the
-  packed integer source register by the shift amount in the second source
-  register, writing the result to the destination packed integer register.
+  Shifts the 32-bit values in vector register fs1 right (shifting in zeros into the upper bits) by the shift
+  amount specified in the corresponding 32-bit unsigned integer values of integer register fs2, and writes the 32-bit
+  results to the vector register fd.
+  The mask register m0 is used to control execution. Inactive elements shall not update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundrypi
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrypi
 encoding:
-  match: 0000111----------101-----1111011
+  match: 0000011----------101-----1111011
   variables:
     - name: rs2
       location: 24-20
@@ -31,3 +33,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = fs1.e<i> >> fs2.e<i>;
+  }

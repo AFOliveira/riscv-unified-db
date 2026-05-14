@@ -6,14 +6,19 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fgw.ps
-long_name: Gather word
+long_name: Floating point gather word packed single
 description: |
-  Gather 8 words from memory using base address rs1 and 8 word offsets from PS register rs2.
+  Gathers eight arbitrary 32-bit memory locations and stores them in the eight 32-bit elements of the
+  destination register fd. The effective addresses of the memory accesses are calculated by adding the 32-bit elements of register fs1, sign-extended to 64 bits, to the value in register rs2.
+  If the instruction traps halfway through its execution the value of GSC_PROGRESS is updated with the next element to be processed.
+  The mask register m0 is used to control execution. Inactive elements shall not generate exceptions and shall not
+  update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 0110000----------001-----0001011
   variables:
@@ -23,9 +28,14 @@ encoding:
       location: 19-15
     - name: rd
       location: 11-7
-assembly: fd, fs1(xs2)
+assembly: fd, fs1(rs2)
 access:
   s: always
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (gsc_progress >= i && m0.bit<i>)
+  fd.e<i> = MEM(rs2 + sext(fs1.e<i>,64), 32);
+  }

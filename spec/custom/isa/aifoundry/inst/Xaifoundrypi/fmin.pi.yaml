@@ -6,16 +6,17 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fmin.pi
-long_name: Packed integer minimum signed
+long_name: Packed integer minimum
 description: |
-  Perform element-wise signed integer minimum across all 8 INT32 lanes
-  of the packed integer source registers, writing the minimum value of each
-  lane pair to the destination packed integer register.
+  Compares the 32-bit signed integer values in vector register fs1 and the 32-bit signed integer values
+  in vector register fs2, and writes the smaller value to vector register fd.
+  The mask register m0 is used to control execution. Inactive elements shall not update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundrypi
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrypi
 encoding:
   match: 0010111----------000-----1111011
   variables:
@@ -31,3 +32,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = (fs1.e<i> > fs2.e<i>) ? fs2.e<i> : fs1.e<i>;
+  }

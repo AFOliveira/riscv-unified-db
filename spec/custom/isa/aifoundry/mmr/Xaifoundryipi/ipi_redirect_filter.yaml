@@ -1,0 +1,20 @@
+$schema: mmr_schema.json#
+kind: mmr
+name: ipi_redirect_filter
+long_name: IPI Redirect Filter
+description: |
+  Hartid filter mask for IPI redirect operations. Sets which harts will
+  receive redirect IPIs triggered by writes to ipi_redirect_trigger.
+definedBy:
+  extension:
+    name: Xaifoundryipi
+physical_address: 0x1c0f40088
+length: 64
+writable: true
+fields:
+  IPI_REDIRECT_FILTER:
+    location: 15-0
+    type: RW
+    reset_value: 65535
+    description: |
+      Hart ID filter mask.

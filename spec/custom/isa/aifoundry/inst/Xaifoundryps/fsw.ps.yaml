@@ -6,14 +6,20 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fsw.ps
-long_name: Store word packed single
+long_name: Floating point store word packed single
 description: |
-  Store all eight 32-bit elements (256 bits) from a packed-single register to consecutive memory.
+  Stores the data in source register fd into 256 consecutive bits in memory.
+  Stores the contents of eight consecutive elements of the floating point destination (fd) register, e0 through e7, to
+  256 consecutive bits in memory. The e0 register contains bits 31:0, and the e7 register contains bits 255:224.
+  The effective address of the store is calculated by adding a signed immediate offset to the value in register rs1. The
+  mask register m0 is used to control execution. Inactive elements shall not generate exceptions and shall not
+  update memory.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: -----------------110-----0001011
   variables:
@@ -23,9 +29,14 @@ encoding:
       location: 24-20
     - name: rs1
       location: 19-15
-assembly: fs2, imm(xs1)
+assembly: fs2, offset(rs1)
 access:
   s: always
   u: always
   vs: always
   vu: always
+operation(): |
+  addr = rs1 + sext(offset, 64);
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) MEM(addr + 4*i, 32) = fs2.e<i>;
+  }

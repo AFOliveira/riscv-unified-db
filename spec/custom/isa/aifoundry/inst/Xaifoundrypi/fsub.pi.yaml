@@ -8,14 +8,14 @@ kind: instruction
 name: fsub.pi
 long_name: Packed integer subtract
 description: |
-  Perform element-wise signed integer subtraction across all 8 INT32 lanes
-  of the packed integer source registers, writing the result to the
-  destination packed integer register.
+  Subtracts the 32-bit integer values in vector register fs2 from the 32-bit integer values in vector register fs1, and writes the 32-bit results to vector register fd.
+  The mask register m0 is used to control execution. Inactive elements shall not update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundrypi
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrypi
 encoding:
   match: 0000111----------000-----1111011
   variables:
@@ -31,3 +31,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = fs1.e<i> - fs2.e<i>;
+  }

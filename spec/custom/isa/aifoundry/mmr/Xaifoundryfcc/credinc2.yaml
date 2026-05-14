@@ -1,0 +1,20 @@
+$schema: mmr_schema.json#
+kind: mmr
+name: credinc2
+long_name: Credit Increment Register 2
+description: |
+  Memory-mapped register to increment fast credit counter 2.
+  Writing to this register adds credits to the specified counter.
+definedBy:
+  extension:
+    name: Xaifoundryfcc
+physical_address: 0x1c03400d0
+length: 64
+writable: true
+fields:
+  MASK2:
+    location: 7-0
+    type: RW
+    reset_value: 0
+    description: |
+      Bitmask selecting which cores' credit counters to increment.

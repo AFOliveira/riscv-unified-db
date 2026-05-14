@@ -1,0 +1,20 @@
+$schema: mmr_schema.json#
+kind: mmr
+name: credinc3
+long_name: Credit Increment Register 3
+description: |
+  Memory-mapped register to increment fast credit counter 3.
+  Writing to this register adds credits to the specified counter.
+definedBy:
+  extension:
+    name: Xaifoundryfcc
+physical_address: 0x1c03400d8
+length: 64
+writable: true
+fields:
+  MASK3:
+    location: 7-0
+    type: RW
+    reset_value: 0
+    description: |
+      Bitmask selecting which cores' credit counters to increment.

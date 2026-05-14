@@ -6,14 +6,18 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fbc.ps
-long_name: Broadcast
+long_name: Floating point broadcast packed single
 description: |
-  Load a 32-bit word from memory at rs1+imm and broadcast to all 8 elements of the destination PS register.
+  Broadcasts a 32 bit value from memory into eight consecutive 32-bit elements of a floating point register (fd). The effective address of the broadcast is calculated by adding a signed immediate offset to the value in
+  register rs1.
+  The mask register m0 is used to control execution. Inactive elements shall not generate exceptions and shall not
+  update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: -----------------000-----0001011
   variables:
@@ -23,9 +27,16 @@ encoding:
       location: 19-15
     - name: rd
       location: 11-7
-assembly: fd, imm(xs1)
+assembly: fd, offset(rs1)
 access:
   s: always
   u: always
   vs: always
   vu: always
+operation(): |
+  if (m0 != 0) {
+  tmp = MEM(rs1 + sext(offset, 64), 32);
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = tmp;
+  }
+  }

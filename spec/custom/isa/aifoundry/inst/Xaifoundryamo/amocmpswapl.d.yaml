@@ -1,0 +1,39 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: amocmpswapl.d
+long_name: Atomic 64-bit compare-and-swap local doubleword
+description: |
+  Local atomic 64-bit compare-and-swap operation. If the value in register x31 and the value in memory address pointed to by integer register 'rs1' are the same, then the memory is written with the value in 'rs2'. The
+  instruction returns in register 'rd' the value originally in memory.
+
+  Exceptions: Virtual address (rs1) must be aligned to an 8 byte boundary. Otherwise an access fault exception is
+  generated.
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryamo
+encoding:
+  match: 1111000----------011-----0111011
+  variables:
+    - name: rs2
+      location: 24-20
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: rd, rs2, (rs1)
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  rd = atomic_local_compare_swap(rs1, x31, rs2, 64)

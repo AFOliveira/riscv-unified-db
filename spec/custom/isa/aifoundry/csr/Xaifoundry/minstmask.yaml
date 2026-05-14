@@ -1,0 +1,20 @@
+$schema: csr_schema.json#
+kind: csr
+name: minstmask
+long_name: Machine Instruction Match Mask
+address: 0x7cd
+priv_mode: M
+length: 64
+writable: true
+description: |
+  Instruction match mask register. Used in conjunction with minstmatch for
+  hardware breakpoint/trigger functionality on specific instruction patterns.
+definedBy:
+  extension:
+    name: Xaifoundry
+fields:
+  MINSTMASK:
+    location: 32-0
+    type: RW
+    reset_value: 0
+    description: Matches docsET RDL field `minstmask`.

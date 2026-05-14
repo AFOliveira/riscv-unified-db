@@ -6,14 +6,51 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fround.ps
-long_name: Packed single rounding
+long_name: Floating point rounding computation packed single
 description: |
-  Packed single rounding.
+  Rounds the single-precision values in vector register fs1 to integral values using the rounding mode
+  specified in the rm field, and writes the single-precision results to the vector register fd.
+  The mask register m0 is used to control execution. Inactive elements shall not generate exceptions and shall not
+  update the destination.
+  Subnormal inputs are treated as zeros, and set the input denormal exception flag. The table below shows the result
+  for various classes of input:
+
+  fs1
+
+  fd
+
+  SNaN
+
+  QNaN
+
+  -
+
+  -0.0
+
+  +0.0
+
+  +
+
+  *
+
+  NaN
+
+  -
+
+  -0.0
+
+  +0.0
+
+  +
+
+  Where * means fd is set to default NaN and the Invalid operation floating-point exception flag is set. The Inexact
+  flag is set when rounding an non-integer finite value.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 010110000001-------------1111011
   variables:
@@ -29,3 +66,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = f32_roundToInt(fs1.e<i>);
+  }

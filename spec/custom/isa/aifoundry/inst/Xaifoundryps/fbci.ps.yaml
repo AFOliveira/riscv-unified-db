@@ -6,14 +6,19 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fbci.ps
-long_name: Broadcast immediate
+long_name: Floating point broadcast of 20-bit immediate to FP register, packed single
 description: |
-  Broadcast a 20-bit immediate (sign-extended/formatted as FP32) to all 8 lanes.
+  This instruction expands the 20-bit immediate in the instruction to an fp32 value and broadcasts this
+  value into the eight elements of a floating point register (fd). The immediate field codifies bits 31:12 of a IEEE754
+  single precision float point number (i.e. - 1 sign bit, 8 exponent bits, and 11 mantissa bits). To fill the missing lower
+  12 mantissa bits of a 32-bit floating point value, the 4 lower bits of the 20-bit immediate value are replicated using
+  the formula shown in the Operation section below.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: -------------------------0011111
   variables:
@@ -21,9 +26,19 @@ encoding:
       location: 31-12
     - name: rd
       location: 11-7
-assembly: fd, imm
+assembly: fd, imm20
 access:
   s: always
   u: always
   vs: always
   vu: always
+operation(): |
+  low4 = imm20 & 0xf;
+  low12 = low4 < 8
+  ?
+   ((low4 << 8) | (low4 << 4) | low4)
+  : ((low4 << 8) | (low4 << 4) | (low4 + 1));
+  tmp = (imm20 << 12) | low12;
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = tmp;
+  }

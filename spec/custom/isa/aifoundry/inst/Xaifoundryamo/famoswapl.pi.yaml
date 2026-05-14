@@ -1,0 +1,45 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: famoswapl.pi
+long_name: Atomic swap local (packed integer)
+description: |
+  Local atomic packed 32-bit swap operation between the values in float point register 'fd' and the values in the memory addresses pointed by a base address in the integer register 'rs2' and the indices in the float
+  point register 'fs1'.
+  If the instruction traps halfway through its execution, the value of GSC_PROGRESS is updated with the next element to be processed.
+
+  Exceptions: Each virtual address generated must be aligned to a 4 byte boundary. Otherwise an access fault
+  exception is generated. Operations are performed in the order indicated above and in case of exception, the progress CSR will be updated to reflect the lowest-numbered operation that has failed, allowing software to determine
+  what portion of the destination register has been updated by the operation.
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryamo
+encoding:
+  match: 0000111----------100-----0001011
+  variables:
+    - name: rs2
+      location: 24-20
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: fd, fs1(rs2)
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  for (i = 0; i < 8; i++ ) {
+  address = rs2 + fs1.e<i>
+  value = fd.e<i>
+  if ( m0.bit<i>) fd.e<i> = atomic_local_swap(address, value, 32)
+  }

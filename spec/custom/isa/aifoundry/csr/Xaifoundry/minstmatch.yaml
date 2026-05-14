@@ -1,0 +1,20 @@
+$schema: csr_schema.json#
+kind: csr
+name: minstmatch
+long_name: Machine Instruction Match
+address: 0x7ce
+priv_mode: M
+length: 64
+writable: true
+description: |
+  Instruction match pattern register. When the fetched instruction ANDed with
+  minstmask equals minstmatch, a match event is triggered.
+definedBy:
+  extension:
+    name: Xaifoundry
+fields:
+  MATCH:
+    location: 31-0
+    type: RW
+    reset_value: 0
+    description: Instruction match pattern.

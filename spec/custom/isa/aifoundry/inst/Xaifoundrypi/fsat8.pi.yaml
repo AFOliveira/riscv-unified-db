@@ -6,15 +6,18 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fsat8.pi
-long_name: Saturate packed integer to INT8
+long_name: Packed integer saturate 8 bit
 description: |
-  Saturate each 32-bit signed integer lane to the INT8 range [-128, 127],
-  writing the result to the destination packed integer register.
+  Converts the 32-bit signed integer values in vector register fs1, to 8-bit signed integer values, and
+  writes the zero-extended result to the 32-bit elements in vector register fd.
+  If the 32-bit input value is not representable in the destination format, it is saturated to the nearest 8-bit value.
+  The mask register m0 is used to control execution. Inactive elements shall not update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundrypi
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrypi
 encoding:
   match: 000001100000-----011-----1111011
   variables:
@@ -28,3 +31,15 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) {
+  if (fs1.e<i> > 127) {
+  fd.e<i> = 127;
+  } else if (fs.e<1> < -128) {
+  fd.e<i> = -128;
+  } else {
+  fd.e<i> = fs1.e<i>;
+  }
+  }
+  }

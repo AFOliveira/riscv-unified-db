@@ -6,16 +6,16 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fandi.pi
-long_name: Packed integer AND immediate
+long_name: Packed integer AND immediate operation
 description: |
-  Perform bitwise AND of a 5-bit zero-extended immediate with all 8 INT32
-  lanes of the packed integer source register, writing the result to the
-  destination.
+  Performs bit-wise AND of the 32-bit values in vector register fs1 and the sign-extended 10-bit immediate operand, and writes the result to vector register fd.
+  The mask register m0 is used to control execution. Inactive elements shall not update the destination.
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundrypi
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrypi
 encoding:
   match: -----10----------001-----0111111
   variables:
@@ -27,9 +27,13 @@ encoding:
       location: 19-15
     - name: rd
       location: 11-7
-assembly: fd, fs1, imm
+assembly: fd, fs1, imm10
 access:
   s: always
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = fs1.e<i> & sext(imm10, 32);
+  }

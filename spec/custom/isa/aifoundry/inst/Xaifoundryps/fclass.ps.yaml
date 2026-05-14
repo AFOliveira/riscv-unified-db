@@ -6,14 +6,60 @@
 $schema: inst_schema.json#
 kind: instruction
 name: fclass.ps
-long_name: Packed single classify
+long_name: Floating point classify operation packed single
 description: |
-  Packed single classify - classify each FP32 element.
+  Produces 10-bit masks with exactly one bit set that indicate the class of the single-precision values in
+  vector register fs1, and writes the 32-bit zero-extended results to vector register fd. The format of the result is as
+  follows:
+  Bit
+
+  Meaning
+
+  0
+
+  Input is -
+
+  1
+
+  Input is a negative normal number
+
+  2
+
+  Input is a negative subnormal number
+
+  3
+
+  Input is -0
+
+  4
+
+  Input is +0
+
+  5
+
+  Input is a positive subnormal number
+
+  6
+
+  Input is a positive normal number
+
+  7
+
+  Input is +
+
+  8
+
+  Input is a signaling NaN
+
+  9
+
+  Input is a quiet NaN
 definedBy:
   anyOf:
-    - Xaifoundry
-    - Xaifoundryps
-base: 32
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundryps
 encoding:
   match: 111000000000-----001-----1111011
   variables:
@@ -27,3 +73,7 @@ access:
   u: always
   vs: always
   vu: always
+operation(): |
+  for (i = 0; i < VLEN/32; i++) {
+  if (m0.bit<i>) fd.e<i> = f32_classify(fs1.e<i>);
+  }

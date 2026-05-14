@@ -1,0 +1,38 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: maskor
+long_name: Logical OR of two source mask registers.
+description: |
+  This operation performs a logical OR between mask registers ms1 and ms2 and stores the result into
+  the destination mask register md.
+
+  Exceptions: None
+  Restrictions: None
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrymask
+encoding:
+  match: 011001100---00---11000---1111011
+  variables:
+    - name: ms2
+      location: 22-20
+    - name: ms1
+      location: 17-15
+    - name: md
+      location: 9-7
+assembly: md, ms1, ms2
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+operation(): |
+  md = ms1 | ms2

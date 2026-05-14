@@ -1,0 +1,70 @@
+$schema: csr_schema.json#
+kind: csr
+name: mcache_control
+long_name: Machine Cache Control
+address: 0x7e0
+priv_mode: M
+length: 64
+writable: true
+description: |
+  Machine-mode control and state for the ET-Minion L1 data cache.
+
+  The low two bits select one of the ET-man cache modes:
+
+  * D1Split=0: shared cache mode (C0). ScpEnable is ignored.
+  * D1Split=1, ScpEnable=0: split cache mode (C1).
+  * D1Split=1, ScpEnable=1: scratchpad mode (C2).
+
+  The only valid transitions of {ScpEnable,D1Split} are 00->01,
+  01->00, 01->11, 11->00, and 11->01. Value 10 is never allowed.
+  Invalid transition writes do not change either control bit.
+definedBy:
+  anyOf:
+    - extension:
+        name: Xaifoundry
+    - extension:
+        name: Xaifoundrycache
+fields:
+  Reserved63_2:
+    location: 63-2
+    type: RO
+    reset_value: 0
+    description: Reserved. Writes are ignored and reads return zero.
+  SCPENABLE:
+    location: 1
+    type: RW-R
+    reset_value: 0
+    description: |
+      Scratchpad enable. When D1Split is 0 this bit is ignored by the
+      cache; when D1Split is 1, setting this bit selects scratchpad mode.
+    sw_write(csr_value): |
+      Bits<2> current = {CSR[mcache_control].SCPENABLE, CSR[mcache_control].D1SPLIT};
+      Bits<2> next = {csr_value.SCPENABLE, csr_value.D1SPLIT};
+
+      if ((next == current) ||
+          (current == 2'b00 && next == 2'b01) ||
+          (current == 2'b01 && (next == 2'b00 || next == 2'b11)) ||
+          (current == 2'b11 && (next == 2'b00 || next == 2'b01))) {
+        return csr_value.SCPENABLE;
+      } else {
+        return CSR[mcache_control].SCPENABLE;
+      }
+  D1SPLIT:
+    location: 0
+    type: RW-R
+    reset_value: 0
+    description: |
+      L1 data cache split control. 0 means the two ET-Minion harts share
+      the L1 data cache dynamically; 1 means the cache is partitioned.
+    sw_write(csr_value): |
+      Bits<2> current = {CSR[mcache_control].SCPENABLE, CSR[mcache_control].D1SPLIT};
+      Bits<2> next = {csr_value.SCPENABLE, csr_value.D1SPLIT};
+
+      if ((next == current) ||
+          (current == 2'b00 && next == 2'b01) ||
+          (current == 2'b01 && (next == 2'b00 || next == 2'b11)) ||
+          (current == 2'b11 && (next == 2'b00 || next == 2'b01))) {
+        return csr_value.D1SPLIT;
+      } else {
+        return CSR[mcache_control].D1SPLIT;
+      }

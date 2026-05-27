@@ -1,0 +1,31 @@
+# Copyright (c) AI Foundry
+# SPDX-License-Identifier: BSD-3-Clause
+
+# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
+
+$schema: inst_schema.json#
+kind: instruction
+name: aif.felix
+long_name: AgentWS dry-run NOP
+description: |
+  Pipeline dry-run placeholder. Decodes as a no-op on the ET-SoC1 minion core;
+  used to exercise UDB → toolchain → RTL → sysemu propagation without PS/PI migration.
+definedBy:
+  anyOf:
+    - Xaifoundry
+base: 32
+encoding:
+  match: 0101010----------111-----0001011
+  variables:
+    - name: rs2
+      location: 24-20
+    - name: rs1
+      location: 19-15
+    - name: rd
+      location: 11-7
+assembly: ""
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always

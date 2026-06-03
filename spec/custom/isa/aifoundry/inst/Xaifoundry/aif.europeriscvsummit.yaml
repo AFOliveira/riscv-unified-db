@@ -1,31 +1,29 @@
 # Copyright (c) AI Foundry
 # SPDX-License-Identifier: BSD-3-Clause
-
-# yaml-language-server: $schema=../../../../../schemas/inst_schema.json
-
 $schema: inst_schema.json#
 kind: instruction
-name: bitmixb
-long_name: Bit mix of lower 24 bits
+name: aif.europeriscvsummit
+long_name: Europe RISC-V Summit custom ADDI
 description: |
-  Bit mix of lower 24 bits from two source registers.
+  Custom-1 I-type instruction with ADDI semantics
+  (X[rd] = X[rs1] + sign_extend(imm[12:0])).
 definedBy:
   anyOf:
     - Xaifoundry
-    - Xaifoundryps
 base: 32
 encoding:
-  match: 1000000----------111-----0101011
+  match: -----------------100-----0101011
   variables:
-    - name: rs2
-      location: 24-20
+    - name: imm
+      location: 31-20
     - name: rs1
       location: 19-15
     - name: rd
       location: 11-7
-assembly: fd, fs1, fs2
+assembly: xd, xs1, imm
 access:
   s: always
   u: always
   vs: always
   vu: always
+operation(): X[rd] = X[rs1] + $signed(imm);

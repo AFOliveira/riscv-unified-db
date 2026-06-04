@@ -15,7 +15,7 @@ definedBy:
     - Xaifoundryps
 base: 32
 encoding:
-  match: -----------------101-----0000111
+  match: -----------------101-----0001011
   variables:
     - name: imm
       location: 31-20

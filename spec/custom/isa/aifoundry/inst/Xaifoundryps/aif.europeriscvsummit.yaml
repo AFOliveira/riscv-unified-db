@@ -5,25 +5,26 @@
 
 $schema: inst_schema.json#
 kind: instruction
-name: fsq2
-long_name: Store 256-bit unmasked
+name: aif.europeriscvsummit
+long_name: Europe RISC-V Summit marker (ADDI-equivalent)
 description: |
-  Store 256 bits (full packed-single register) to memory.
+  Custom-1 I-type with ADDI semantics (X[rd] = X[rs1] + sign_extend(imm[11:0])).
+  Encoding per approved encoding_plan.yaml; reference mnemonic is addi.
 definedBy:
   anyOf:
     - Xaifoundry
     - Xaifoundryps
 base: 32
 encoding:
-  match: -----------------101-----0101011
+  match: -----------------100-----0101011
   variables:
     - name: imm
-      location: 31-25|11-7
-    - name: rs2
-      location: 24-20
-    - name: rs1
+      location: 31-20
+    - name: xs1
       location: 19-15
-assembly: fs2, imm(xs1)
+    - name: xd
+      location: 11-7
+assembly: xd, xs1, imm
 access:
   s: always
   u: always
